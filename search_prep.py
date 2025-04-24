@@ -13,6 +13,7 @@ need:
 import os,sys
 import numpy as np
 from psr_fuc import *
+import multiprocessing
 from multiprocessing import Pool, cpu_count
 from tqdm import tqdm
 import functools
@@ -80,8 +81,13 @@ def prep_configure(observation_filename):
     # 默认配置参数
     dict_survey_configuration_default_values = {
         'OBSNAME':                               "%s               # 默认请使用*fits ，通过-obs指定文件" %observation_filename,
-        'SEARCH_LABEL':                          "%s               # 当前搜索项目的标签" % os.path.basename(os.getcwd()),
+        'SOURCE_NAME':                           "AQLX-1           # 源名" ,       
+        'SEARCH_LABEL':                          "%s               # 当前搜索项目的标签，建议修改标志" % os.path.basename(os.getcwd()),
         'DATA_TYPE':                             "%-18s            # 数据类型选项：filterbank 或 psrfits" % (default_file_format),
+        'IF_BARY':                               "1                # 是否执行质心修正？重要参数（1=是，0=否）。1需要给出正确的RA,DEC" ,    
+        'RA':                                    " 17:20:54.5063   # 赤经eg: 17:20:54.5063 " ,    
+        'DEC':                                   " -08:57:31.29    # 赤纬eg: -08:57:31.29  " ,    
+        'POOL_NUM':                              "%s               # 多线程核数。（默认为一半） "%int(cpu_count()/2) ,
         'ROOT_WORKDIR':                          "%s               # 根工作目录的路径。"% os.getcwd(),
         'PRESTO':                                "%s               # 主要的 PRESTO 安装路径" % presto_path,
         'PRESTO_GPU':                            "%s               # PRESTO_ON_GPU 安装路径（如果存在）" % presto_gpu_path,
@@ -90,10 +96,10 @@ def prep_configure(observation_filename):
         'DM_MAX':                                "100.0            # 搜索的最大色散",
         'DM_STEP':                           "[(20, 30, 0.1)]      # 自定义搜索的色散间隔列表，IF_DDPLAN=0时使用",
         'DM_COHERENT_DEDISPERSION':              "0                # 可能的相干去色散（CDD）的色散值（0 = 不进行 CDD）",
-        'N_SUBBANDS':                            "0                # 使用的子带数量（0 = 使用所有通道）",
+        'N_SUBBANDS':                            "128              # 使用的子带数量（0 = 使用所有通道）",
         'PERIOD_TO_SEARCH_MIN':                  "0.001            # 可接受的最小候选周期（秒）",
         'PERIOD_TO_SEARCH_MAX':                  "20.0             # 可接受的最大候选周期（秒）,毫秒脉冲星可改为0.040",
-        'LIST_SEGMENTS':                         "full             # 用于搜索的分段长度（以分钟为单位），用逗号分隔（例如 \"full,20,10\"）",
+        'LIST_SEGMENTS':                         "full             # 用于搜索的分段长度（以分钟为单位），用逗号分隔（例如 \"full,20,10\"）,该功能目前不可用",
         'RFIFIND_TIME':                          "0.1              # RFIFIND 的 -time 选项值,FAST默认0.1",
         'RFIFIND_CHANS_TO_ZAP':                  "\"\"             # 在 RFIFIND 掩模中需要消除的通道列表",
         'RFIFIND_TIME_INTERVALS_TO_ZAP':         "\"\"             # 在 RFIFIND 掩模中需要消除的时间间隔列表",
@@ -101,7 +107,7 @@ def prep_configure(observation_filename):
         'ZAP_ISOLATED_PULSARS_FROM_FFTS':        "0                # 是否在功率谱中消除已知脉冲星？（1=是，0=否）",
         'ZAP_ISOLATED_PULSARS_MAX_HARM':         "8                # 如果在功率谱中消除已知脉冲星，消除到这个谐波次数",
         'FLAG_ACCELERATION_SEARCH':              "1                # 是否进行加速搜索？（1=是，0=否）",
-        'ACCELSEARCH_LIST_ZMAX':                 "0,200            # 使用 PRESTO accelsearch 时的 zmax 值列表（用逗号分隔）",
+        'ACCELSEARCH_LIST_ZMAX':                 "0                # 使用 PRESTO accelsearch 时的 zmax 值列表（用逗号分隔）",
         'ACCELSEARCH_NUMHARM':                   "8                # 加速搜索时使用的谐波数量",
         'FLAG_JERK_SEARCH':                      "0                # 是否进行jerk search？（1=是，0=否）",
         'JERKSEARCH_ZMAX':                       "100              # jerk search时使用的 zmax 值",
@@ -116,6 +122,7 @@ def prep_configure(observation_filename):
         'FLAG_FOLD_KNOWN_PULSARS':               "1                # 是否折叠可能是已知脉冲星的候选项？（1=是，0=否）",
         'FLAG_FOLD_TIMESERIES':                  "0                # 是否使用时间序列折叠候选项（超快，但没有频率信息）？（1=是，0=否）",
         'FLAG_FOLD_RAWDATA':                     "1                # 是否使用原始数据文件折叠候选项（慢，但包含所有信息）？（1=是，0=否）",
+        'FLAG_NUM':                              "50               # 折叠图片数量",
         'RFIFIND_FLAGS':                         "\"\"             # 为 RFIFIND 提供的其他选项",
         'PREPDATA_FLAGS':                        "\"\"             # 为 PREPDATA 提供的其他选项",
         'PREPSUBBAND_FLAGS':                     "\"-ncpus 4\"     # 为 PREPSUBBAND 提供的其他选项",
@@ -136,7 +143,7 @@ def prep_configure(observation_filename):
         'NUM_SIMULTANEOUS_SINGLEPULSE_SEARCHES': "%-4d             # 同时运行的单脉冲搜索实例数量" % (multiprocessing.cpu_count()),
         'FAST_BUFFER_DIR':                       "\"\"             # 快速内存缓冲区路径（可选，最小化 I/O 瓶颈）",
         'FLAG_KEEP_DATA_IN_BUFFER_DIR':          "0                # 搜索后是否在缓冲区保留观测数据副本？（1=是，0=否）",
-        'FLAG_REMOVE_FFTFILES':                  "1                # 搜索后是否删除 FFT 文件以节省磁盘空间？（1=是，0=否）",
+        'FLAG_REMOVE_FFTFILES':                  "0                # 搜索后是否删除 FFT 文件以节省磁盘空间？（1=是，0=否）",
         'FLAG_REMOVE_DATFILES_OF_SEGMENTS':      "1                # 搜索后是否删除较短分段的 .dat 文件以节省磁盘空间？（1=是，0=否）",
         'STEP_RFIFIND':                          "1                # 是否运行 RFIFIND 步骤？（1=是，0=否）",
         'STEP_ZAPLIST':                          "1                # 是否运行 ZAPLIST 步骤？（1=是，0=否）",
@@ -153,7 +160,7 @@ def prep_configure(observation_filename):
             default_cfg_filename_existing = default_cfg_filename
             default_cfg_filename = "%s_2.cfg" % (os.path.basename(os.getcwd()))
             print("******************")
-            print("警告：'%s' 已经存在！正在将默认配置保存到文件 '%s'" % (default_cfg_filename_existing, default_cfg_filename))
+            print_log(f"警告：{default_cfg_filename_existing} 已经存在！正在将默认配置保存到文件{default_cfg_filename}" ,masks=default_cfg_filename,color=colors.WARNING)
             print("******************")
             print()
     with open(default_cfg_filename, "w") as f:
@@ -168,54 +175,48 @@ def prep_configure(observation_filename):
                 formatted_value = value.strip()
             if i == 1:
                 write_section_header(f,'一般参数')
-            if i == 7:
-                write_section_header(f,'搜寻核心参数')
-            if i == 16:
-                write_section_header(f,'用PRESTO进行傅里叶域搜索')
-            if i == 47:
-                write_section_header(f,'Single pulse search with PRESTO')  
-            if i == 4:
-                write_section_header(f,'计算/性能参数') 
-            if i in [12,15,20,22,25,29,35,38,51,56,]:
+            if i == 12:
+                write_section_header(f, '搜寻核心参数')
+            if i == 21:
+                write_section_header(f, '用PRESTO进行傅里叶域搜索')
+            if i == 52:
+                write_section_header(f, 'Single pulse search with PRESTO')  
+            if i == 9:
+                write_section_header(f, '计算/性能参数') 
+            if i in [17, 20, 25, 27, 29, 34, 40, 44, 57, 62]:
                 f.write("\n")              
             f.write(f"{key.ljust(max_key_length)} {formatted_value}\n")
 
 
-    print(f"默认配置已写入 '{default_cfg_filename}'。")
-    print()
-    print("默认配置已写入 '%s'。" % (default_cfg_filename))
+    print_log(f"\n默认配置已写入{default_cfg_filename}",masks=default_cfg_filename,color=colors.OKBLUE)
 
     with open("common_birdies.txt", "w") as f:
             f.write("10.00   0.003     2     1     0\n")
             f.write("30.00    0.008     2     1     0\n")
             f.write("50.00    0.08      3     1     0\n")
-    print("一些常见的干扰频率已写入 'common_birdies.txt'。")
-    print()
-    print("如果有的话，请将已知脉冲星的参数文件放在 'known_pulsars' 文件夹中。")
-    print()
-    print("建议单独创建观测数据的 RFIFIND 掩模，以确保合理比例的频带被屏蔽。")
-    print("在你对掩模满意后，请将所有相关文件放在 '01_RFIFIND' 文件夹中，并确保它们的文件名与观测数据的文件名一致（例如，'myobs.fil' 应在 '01_RFIFIND' 中有对应的 'myobs_rfifind.mask'、'myobs_rfifind.inf' 等文件）。")
-    print()
-    print("现在请编辑配置文件 '%s'，调整参数，并使用以下命令运行管道：" % (default_cfg_filename))
-    print("all_pulsar_search.py -config %s -obs %s" % (default_cfg_filename, default_obs))
-    print()
+    print(f"一些常见的干扰频率已写入 'common_birdies.txt'。\n")
+    print(f"如果有的话，请将已知脉冲星的参数文件放在 'known_pulsars' 文件夹中。\n")
+
     exit()
 
-#def main():
+# def main():
 cwd = os.getcwd()
-obsname = "*fits"
-ps_pl_path = os.path.abspath( os.path.dirname( __file__ ) )
+ps_pl_path = os.path.abspath(os.path.dirname(__file__))
 
+print(f"用法: {os.path.basename(sys.argv[0])} -obs <观测文件>")
 if (len(sys.argv) == 1 or ("-h" in sys.argv) or ("-help" in sys.argv) or ("--help" in sys.argv)):
     # 打印程序的用法
-    print("用法: %s -obs <观测文件> " % (os.path.basename(sys.argv[0])))
+    print('未指定obs，将使用*fits作为默认文件')
+    obsname = "*fits"
+    prep_configure(obsname)
     print()
-    print("创建默认的搜寻配置文件: \033[1m%s -obs [<观测文件>]\033[0m" % (os.path.basename(sys.argv[0])))
+    print(f"创建指定的搜寻配置文件请运行: \033[1m{os.path.basename(sys.argv[0])} -obs [<观测文件>]\033[0m")
     print()
-    exit()
+
 else:
     for j in range(1, len(sys.argv)):
         if  (sys.argv[j] == "-obs"):
             obsname = sys.argv[j+1]
             prep_configure(obsname)
+
 
