@@ -1235,7 +1235,7 @@ with open(SNR_file, "r") as f:
                 file_script_fold_name = "script_fold_ts.txt"
                 file_script_fold_abspath = f"{dir_folding}/{file_script_fold_name}"
                 
-                file_to_fold = os.path.join(dir_dedispersion, cand_file.filename.split("_ACCEL")[0] + ".dat")
+                file_to_fold = os.path.join(dir_dedispersion, cand_file.split("_ACCEL")[0] + ".dat")
                 cmd_prepfold1 = f"prepfold -nosearch {other_flags_prepfold} -noxwin -dm {dm} -accelcand {candnum} -accelfile {dir_dedispersion}/{cand_file}.cand -o {outname}_ts_DM{dm}_{str_zmax_wmax}  {file_to_fold}" #没有添加mask
                 #A9_AQLX-1_raw_DM11.50_z0_ACCEL_Cand_4.pfd.png
                 png1 = os.path.join(png_dir,f"{outname}_ts_DM{dm}_{str_zmax_wmax}_ACCEL_Cand_{candnum}.pfd.png")
@@ -1246,7 +1246,7 @@ with open(SNR_file, "r") as f:
                 p1.append(png1)
                 l1.append(log1)
 
-            elif config.flag_fold_rawdata == 1:
+            if config.flag_fold_rawdata == 1:
                 file_script_fold_name = "script_fold_raw.txt"
                 file_script_fold_abspath = f"{png_dir}/{file_script_fold_name}"
 
@@ -1270,10 +1270,11 @@ with open(SNR_file, "r") as f:
 def fold_task(cmd, ifok,logfile, work_dir,png_dir):
     whitelist = []
     filename = os.path.basename(ifok)
+    png_name = f'{filename[:-4]}.png'
     ps_path = os.path.join(work_dir,f'{filename[:-4]}.ps')
     """子任务执行函数"""
     run_cmd(cmd, ifok = ifok, work_dir=work_dir,log_file=logfile,mode='both')  #根据ifok判断是否运行cmd
-    ps2png(ps_path)
+    ps2png(png_name)
     handle_files(work_dir, png_dir, 'copy',ps_path )
 
 def pool_fold(num_processes, task_name, cmd_list, ifok_list,log_list, work_dir=os.getcwd(),png_dir = None):
