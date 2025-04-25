@@ -1332,10 +1332,11 @@ def pool_fold(num_processes, task_name, cmd_list, ifok_list,log_list, work_dir=o
 
 if config.flag_step_folding == 1:
     fold_num_pl = min(len(cmd_prepfold_list),fold_num)
+    
     # False_list = [False] * fold_num_pl
     # cmd_prepfold_list1 = cmd_prepfold_list[:fold_num_pl]
     start_time = time.time()
-    pool_fold(n_pool,'fold',cmd_prepfold_list,ifok_prepfold_list,log_prepfold_list,work_dir = dir_folding,png_dir=png_dir)
+    pool_fold(n_pool,'fold',cmd_prepfold_list[:fold_num_pl],ifok_prepfold_list[:fold_num_pl],log_prepfold_list[:fold_num_pl],work_dir = dir_folding,png_dir=png_dir)
 
     end_time = time.time()
     execution_time = end_time - start_time
