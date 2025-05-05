@@ -338,7 +338,7 @@ def child_task(cmd, ifok,logfile, work_dir):
     """子任务执行函数"""
     run_cmd(cmd, ifok = ifok, work_dir=work_dir,log_file=logfile,mode='both')  #根据ifok判断是否运行cmd
 
-def pool(num_processes, task_name, cmd_list, ifok_list,log_list, work_dir=os.getcwd()):
+def pool(num_processes, task_name, cmd_list, ifok_list, log_list=None, work_dir=os.getcwd()):
     """
     改进的多进程任务调度函数
     
@@ -347,11 +347,18 @@ def pool(num_processes, task_name, cmd_list, ifok_list,log_list, work_dir=os.get
         task_name (str): 任务名称（用于进度条显示）
         cmd_list (list): 要执行的命令列表
         ifok_list (list): 布尔值列表，控制是否执行对应命令
+        log_list (list, optional): 日志文件名列表或布尔值列表，默认为与 cmd_list 长度相同的 False 列表
         work_dir (str): 工作目录路径
     """
     # 参数合法性校验
     if len(cmd_list) != len(ifok_list):
-        raise ValueError("cmd_list和ifok_list长度必须一致")
+        raise ValueError("cmd_list 和 ifok_list 长度必须一致")
+    
+    # 如果未提供 log_list，则生成默认的 False 列表
+    if log_list is None:
+        log_list = [False] * len(cmd_list)
+    elif len(cmd_list) != len(log_list):
+        raise ValueError("cmd_list 和 log_list 长度必须一致")
 
     # 初始化进度条和线程锁
     progress_bar = tqdm(
@@ -359,13 +366,11 @@ def pool(num_processes, task_name, cmd_list, ifok_list,log_list, work_dir=os.get
         desc=f"{task_name}-{num_processes}核",
         unit="cmd",
         dynamic_ncols=True,
-        # position=0
     )
-    # lock = Lock()
 
     def update(*args):
         progress_bar.update()
-    
+
     def handle_error(error):
         """统一错误处理函数"""
         progress_bar.write(f"任务执行错误: {error}")
@@ -376,11 +381,11 @@ def pool(num_processes, task_name, cmd_list, ifok_list,log_list, work_dir=os.get
         results = [
             process_pool.apply_async(
                 child_task,
-                args=(cmd, ifok, log_file,work_dir),
+                args=(cmd, ifok, log_file, work_dir),
                 callback=update,
                 error_callback=handle_error
             )
-            for cmd, ifok,log_file in zip(cmd_list, ifok_list,log_list)
+            for cmd, ifok, log_file in zip(cmd_list, ifok_list, log_list)
         ]
         process_pool.close()
         process_pool.join()
