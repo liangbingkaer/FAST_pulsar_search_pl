@@ -81,20 +81,20 @@ def prep_configure(observation_filename):
     # 默认配置参数
     dict_survey_configuration_default_values = {
         'OBSNAME':                               "%s               # 默认请使用*fits ，通过-obs指定文件" %observation_filename,
-        'SOURCE_NAME':                           "AQLX-1           # 源名" ,       
+        'SOURCE_NAME':                           "NGC6517           # 源名" ,       
         'SEARCH_LABEL':                          "%s               # 当前搜索项目的标签，建议修改标志" % os.path.basename(os.getcwd()),
         'DATA_TYPE':                             "%-18s            # 数据类型选项：filterbank 或 psrfits" % (default_file_format),
         'IF_BARY':                               "1                # 是否执行质心修正？重要参数（1=是，0=否）。1需要给出正确的RA,DEC" ,    
-        'RA':                                    " 17:20:54.5063   # 赤经eg: 17:20:54.5063 " ,    
+        'RA':                                    " 18:01:50.6232   # 赤经eg: 17:20:54.5063 " ,    
         'DEC':                                   " -08:57:31.29    # 赤纬eg: -08:57:31.29  " ,    
         'POOL_NUM':                              "%s               # 多线程核数。（默认为一半） "%int(cpu_count()/2) ,
         'ROOT_WORKDIR':                          "%s               # 根工作目录的路径。"% os.getcwd(),
         'PRESTO':                                "%s               # 主要的 PRESTO 安装路径" % presto_path,
         'PRESTO_GPU':                            "%s               # PRESTO_ON_GPU 安装路径（如果存在）" % presto_gpu_path,
-        'IF_DDPLAN':                             "1                # 是否执行ddplan？（1=是，0=否）",
+        'IF_DDPLAN':                             "0                # 是否执行ddplan？（1=是，0=否）",
         'DM_MIN':                                "2.0              # 搜索的最小色散",
         'DM_MAX':                                "100.0            # 搜索的最大色散",
-        'DM_STEP':                           "[(20, 30, 0.1)]      # 自定义搜索的色散间隔列表，IF_DDPLAN=0时使用",
+        'DM_STEP':                           "[(170,190,0.05)]      # 自定义搜索的色散间隔列表，IF_DDPLAN=0时使用",
         'DM_COHERENT_DEDISPERSION':              "0                # 可能的相干去色散（CDD）的色散值（0 = 不进行 CDD）",
         'N_SUBBANDS':                            "128              # 使用的子带数量（0 = 使用所有通道）",
         'PERIOD_TO_SEARCH_MIN':                  "0.001            # 可接受的最小候选周期（秒）",
@@ -120,9 +120,9 @@ def prep_configure(observation_filename):
         'SIFTING_MINIMUM_DM':                    "2.0              # 候选项必须出现的最小 DM 值，才被认为是“好的”",
         'SIFTING_SIGMA_THRESHOLD':               "4.0              # 候选项的最小可接受显著性",
         'FLAG_FOLD_KNOWN_PULSARS':               "1                # 是否折叠可能是已知脉冲星的候选项？（1=是，0=否）",
-        'FLAG_FOLD_TIMESERIES':                  "0                # 是否使用时间序列折叠候选项（超快，但没有频率信息）？（1=是，0=否）",
-        'FLAG_FOLD_RAWDATA':                     "1                # 是否使用原始数据文件折叠候选项（慢，但包含所有信息）？（1=是，0=否）",
-        'FLAG_NUM':                              "50               # 折叠图片数量",
+        'FLAG_FOLD_TIMESERIES':                  "1                # 是否使用时间序列折叠候选项（超快，但没有频率信息）？（1=是，0=否）",
+        'FLAG_FOLD_RAWDATA':                     "0                # 是否使用原始数据文件折叠候选项（慢，但包含所有信息）？（1=是，0=否）",
+        'FLAG_NUM':                              "100               # 折叠图片数量",
         'RFIFIND_FLAGS':                         "\"\"             # 为 RFIFIND 提供的其他选项",
         'PREPDATA_FLAGS':                        "\"\"             # 为 PREPDATA 提供的其他选项",
         'PREPSUBBAND_FLAGS':                     "\"-ncpus 4\"     # 为 PREPSUBBAND 提供的其他选项",
@@ -131,7 +131,7 @@ def prep_configure(observation_filename):
         'ACCELSEARCH_FLAGS':                     "\"\"             # 进行加速搜索时为 ACCELSEARCH 提供的其他选项",
         'ACCELSEARCH_GPU_FLAGS':                 "\"\"             # 使用 PRESTO_ON_GPU 进行加速搜索时为 ACCELSEARCH 提供的其他选项",
         'ACCELSEARCH_JERK_FLAGS':                "\"\"             # 进行jerk search时为 ACCELSEARCH 提供的其他选项",
-        'PREPFOLD_FLAGS':                        "\"-ncpus %-3d -n 64\"     # 为 PREPFOLD 提供的其他选项" % (multiprocessing.cpu_count() / 4),
+        'PREPFOLD_FLAGS':                        "\"-ncpus %-3d -n 64 -nosearch -nsub 64 \"     # 为 PREPFOLD 提供的其他选项" % (multiprocessing.cpu_count() / 4),
         'FLAG_SINGLEPULSE_SEARCH':               "1                # 是否进行单脉冲搜索？（1=是，0=否）",
         'SINGLEPULSE_SEARCH_FLAGS':              "\"\"             # 进行单脉冲搜索时为 SINGLE_PULSE_SEARCH.py 提供的其他选项",
         'USE_CUDA':                              "%s               # 是否使用 GPU 加速？（1=是，0=否）" % use_cuda,
@@ -218,5 +218,6 @@ else:
         if  (sys.argv[j] == "-obs"):
             obsname = sys.argv[j+1]
             prep_configure(obsname)
+
 
 
