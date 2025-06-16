@@ -6,18 +6,14 @@ Created on 2025.3.1
 qq:2107053791
 
 need: 
-主程序
+presto
+psr_fuc.py
 """
 
-
 import os,sys
-import numpy as np
 from psr_fuc import *
 import multiprocessing
 from multiprocessing import Pool, cpu_count
-from tqdm import tqdm
-import functools
-from datetime import datetime
 
 try:
     from presto import filterbank, infodata, parfile, psr_utils, psrfits, rfifind, sifting
@@ -27,7 +23,6 @@ except:
     exit()
 
 import warnings
-from multiprocessing.pool import ThreadPool
 warnings.simplefilter('ignore', UserWarning)
 
 # 获取环境变量
@@ -76,71 +71,83 @@ def prep_configure(observation_filename):
     use_cuda = '1' if presto_gpu_path and presto_gpu_path != presto_path else '0'
 
     if use_cuda == '0':
-        print("警告：未定义 PRESTO2_ON_GPU 或 PRESTO_ON_GPU，GPU 加速将不可用！")
+        print("\n警告：未定义 PRESTO2_ON_GPU 或 PRESTO_ON_GPU，GPU 加速将不可用！")
 
     # 默认配置参数
     dict_survey_configuration_default_values = {
         'OBSNAME':                               "%s               # 默认请使用*fits ，通过-obs指定文件" %observation_filename,
-        'SOURCE_NAME':                           "NGC6517           # 源名" ,       
+        'SOURCE_NAME':                           "j1631            # 源名" ,       
         'SEARCH_LABEL':                          "%s               # 当前搜索项目的标签，建议修改标志" % os.path.basename(os.getcwd()),
-        'DATA_TYPE':                             "%-18s            # 数据类型选项：filterbank 或 psrfits" % (default_file_format),
+        
         'IF_BARY':                               "1                # 是否执行质心修正？重要参数（1=是，0=否）。1需要给出正确的RA,DEC" ,    
-        'RA':                                    " 18:01:50.6232   # 赤经eg: 17:20:54.5063 " ,    
-        'DEC':                                   " -08:57:31.29    # 赤纬eg: -08:57:31.29  " ,    
-        'POOL_NUM':                              "%s               # 多线程核数。（默认为一半） "%int(cpu_count()/2) ,
-        'ROOT_WORKDIR':                          "%s               # 根工作目录的路径。"% os.getcwd(),
-        'PRESTO':                                "%s               # 主要的 PRESTO 安装路径" % presto_path,
-        'PRESTO_GPU':                            "%s               # PRESTO_ON_GPU 安装路径（如果存在）" % presto_gpu_path,
         'IF_DDPLAN':                             "0                # 是否执行ddplan？（1=是，0=否）",
-        'DM_MIN':                                "2.0              # 搜索的最小色散",
-        'DM_MAX':                                "100.0            # 搜索的最大色散",
-        'DM_STEP':                           "[(170,190,0.05)]      # 自定义搜索的色散间隔列表，IF_DDPLAN=0时使用",
-        'DM_COHERENT_DEDISPERSION':              "0                # 可能的相干去色散（CDD）的色散值（0 = 不进行 CDD）",
-        'N_SUBBANDS':                            "128              # 使用的子带数量（0 = 使用所有通道）",
+        'FLAG_ACCELERATION_SEARCH':              "1                # 是否进行加速搜索？（1=是，0=否）",
+        'FLAG_JERK_SEARCH':                      "0                # 是否进行jerk search？（1=是，0=否）",
         'PERIOD_TO_SEARCH_MIN':                  "0.001            # 可接受的最小候选周期（秒）",
         'PERIOD_TO_SEARCH_MAX':                  "20.0             # 可接受的最大候选周期（秒）,毫秒脉冲星可改为0.040",
-        'LIST_SEGMENTS':                         "full             # 用于搜索的分段长度（以分钟为单位），用逗号分隔（例如 \"full,20,10\"）,该功能目前不可用",
-        'RFIFIND_TIME':                          "0.1              # RFIFIND 的 -time 选项值,FAST默认0.1",
-        'RFIFIND_CHANS_TO_ZAP':                  "\"\"             # 在 RFIFIND 掩模中需要消除的通道列表",
-        'RFIFIND_TIME_INTERVALS_TO_ZAP':         "\"\"             # 在 RFIFIND 掩模中需要消除的时间间隔列表",
-        'IGNORECHAN_LIST':                       "\"\"             # 分析中完全忽略的通道列表（PRESTO -ignorechan 选项）",
-        'ZAP_ISOLATED_PULSARS_FROM_FFTS':        "0                # 是否在功率谱中消除已知脉冲星？（1=是，0=否）",
-        'ZAP_ISOLATED_PULSARS_MAX_HARM':         "8                # 如果在功率谱中消除已知脉冲星，消除到这个谐波次数",
-        'FLAG_ACCELERATION_SEARCH':              "1                # 是否进行加速搜索？（1=是，0=否）",
-        'ACCELSEARCH_LIST_ZMAX':                 "0                # 使用 PRESTO accelsearch 时的 zmax 值列表（用逗号分隔）",
+        'FLAG_SINGLEPULSE_SEARCH':               "1                # 是否进行单脉冲搜索？（1=是，0=否）",
+        
+        'POOL_NUM':                              "%s               # 多线程核数。（默认为一半） "%int(cpu_count()/2) ,
+        'DM_MIN':                                "2.0              # 搜索的最小色散",
+        'DM_MAX':                                "500.0            # 搜索的最大色散",
+        'DM_STEP':                           "[(32,35,0.01)]       # 自定义搜索的色散间隔列表，仅会在IF_DDPLAN=0时使用",
+        'DM_COHERENT_DEDISPERSION':              "0                # 可能的相干去色散（CDD）的色散值（0 = 不进行 CDD）",
+
+        'ACCELSEARCH_LIST_ZMAX':                 "0               # 使用 PRESTO accelsearch 时的 zmax 值列表（用逗号分隔）",
         'ACCELSEARCH_NUMHARM':                   "8                # 加速搜索时使用的谐波数量",
-        'FLAG_JERK_SEARCH':                      "0                # 是否进行jerk search？（1=是，0=否）",
         'JERKSEARCH_ZMAX':                       "100              # jerk search时使用的 zmax 值",
         'JERKSEARCH_WMAX':                       "300              # jerk search时使用的 wmax 值（0 = 不进行jerk search）",
         'JERKSEARCH_NUMHARM':                    "4                # jerk search时使用的谐波数量",
+
+        'N_SUBBANDS':                            "128              # 使用的子带数量（0 = 使用所有通道）",
+        'LIST_SEGMENTS':                         "full             # 用于搜索的分段长度（以分钟为单位），用逗号分隔（例如 \"full,20,10\"）,该功能目前不可用",
+        'NUM_SIMULTANEOUS_JERKSEARCHES':         "%-4d             # 同时运行的jerk search实例数量" % (multiprocessing.cpu_count()),
+        'NUM_SIMULTANEOUS_PREPFOLDS':            "4                # 同时运行的 prepfold 实例的最大数量",
+        'NUM_SIMULTANEOUS_PREPSUBBANDS':         "%-4d             # 同时运行的 prepsubband 实例的最大数量" % (multiprocessing.cpu_count() / 4),
+        'MAX_SIMULTANEOUS_DMS_PER_PREPSUBBAND':  "1000             # prepsubband 一次处理的最大 DM 值数量（最大 1000）",
+        'NUM_SIMULTANEOUS_SINGLEPULSE_SEARCHES': "%-4d             # 同时运行的单脉冲搜索实例数量" % (multiprocessing.cpu_count()),       
+        
+        'RFIFIND_TIME':                          "0.1              # RFIFIND 的 -time 选项值,FAST默认0.1",
+        'RFIFIND_FLAGS':                         "\"\"             # 为 RFIFIND 提供的其他选项",
+        'RFIFIND_CHANS_TO_ZAP':                  "\"\"             # 在 RFIFIND 掩模中需要消除的通道列表",
+        'RFIFIND_TIME_INTERVALS_TO_ZAP':         "\"\"             # 在 RFIFIND 掩模中需要消除的时间间隔列表",
+        'IGNORECHAN_LIST':                       "\"\"             # 分析中完全忽略的通道列表（PRESTO -ignorechan 选项）",
+
+        'REALFFT_FLAGS':                         "\"\"             # 为 REALFFT 提供的其他选项",
+        'ZAP_ISOLATED_PULSARS_FROM_FFTS':        "0                # 是否在功率谱中消除已知脉冲星？（1=是，0=否）",
+        'ZAP_ISOLATED_PULSARS_MAX_HARM':         "8                # 如果在功率谱中消除已知脉冲星，消除到这个谐波次数",
+
         'SIFTING_FLAG_REMOVE_DUPLICATES':        "1                # 在筛选时是否移除候选重复项？（1=是，0=否）",
         'SIFTING_FLAG_REMOVE_DM_PROBLEMS':       "1                # 是否移除在少数 DM 值中出现的候选项？（1=是，0=否）",
         'SIFTING_FLAG_REMOVE_HARMONICS':         "1                # 是否移除谐波相关的候选项？（1=是，0=否）",
         'SIFTING_MINIMUM_NUM_DMS':               "3                # 候选项必须出现的最小 DM 值数量，才被认为是“好的”",
         'SIFTING_MINIMUM_DM':                    "2.0              # 候选项必须出现的最小 DM 值，才被认为是“好的”",
-        'SIFTING_SIGMA_THRESHOLD':               "4.0              # 候选项的最小可接受显著性",
+        'SIFTING_SIGMA_THRESHOLD':               "4.0              # 候选项的最小可接受显著性",        
+
         'FLAG_FOLD_KNOWN_PULSARS':               "1                # 是否折叠可能是已知脉冲星的候选项？（1=是，0=否）",
         'FLAG_FOLD_TIMESERIES':                  "1                # 是否使用时间序列折叠候选项（超快，但没有频率信息）？（1=是，0=否）",
         'FLAG_FOLD_RAWDATA':                     "0                # 是否使用原始数据文件折叠候选项（慢，但包含所有信息）？（1=是，0=否）",
         'FLAG_NUM':                              "100               # 折叠图片数量",
-        'RFIFIND_FLAGS':                         "\"\"             # 为 RFIFIND 提供的其他选项",
-        'PREPDATA_FLAGS':                        "\"\"             # 为 PREPDATA 提供的其他选项",
         'PREPSUBBAND_FLAGS':                     "\"-ncpus 4\"     # 为 PREPSUBBAND 提供的其他选项",
-        'REALFFT_FLAGS':                         "\"\"             # 为 REALFFT 提供的其他选项",
+
+        'DATA_TYPE':                             "%-18s            # 数据类型选项：filterbank 或 psrfits" % (default_file_format),        
+        'RA':                                    " 16:31:43.2207   # 赤经eg: 17:20:54.5063 " ,    
+        'DEC':                                   " +12:52:05.448    # 赤纬eg: -08:57:31.29  " ,    
+        'ROOT_WORKDIR':                          "%s               # 根工作目录的路径。"% os.getcwd(),
+        'PRESTO':                                "%s               # 主要的 PRESTO 安装路径" % presto_path,
+        'PRESTO_GPU':                            "%s               # PRESTO_ON_GPU 安装路径（如果存在）" % presto_gpu_path,
+        'USE_CUDA':                              "%s               # 是否使用 GPU 加速？（1=是，0=否）" % use_cuda,
+        'CUDA_IDS':                              "0                # 使用的 NVIDIA GPU 的 ID（用逗号分隔，例如 \"0,1,2,3\" - 使用 'nvidia-smi' 检查）",
+       
+
+        'PREPDATA_FLAGS':                        "\"\"             # 为 PREPDATA 提供的其他选项",
         'REDNOISE_FLAGS':                        "\"\"             # 为 REDNOISE 提供的其他选项",
         'ACCELSEARCH_FLAGS':                     "\"\"             # 进行加速搜索时为 ACCELSEARCH 提供的其他选项",
         'ACCELSEARCH_GPU_FLAGS':                 "\"\"             # 使用 PRESTO_ON_GPU 进行加速搜索时为 ACCELSEARCH 提供的其他选项",
         'ACCELSEARCH_JERK_FLAGS':                "\"\"             # 进行jerk search时为 ACCELSEARCH 提供的其他选项",
         'PREPFOLD_FLAGS':                        "\"-ncpus %-3d -n 64 -nosearch -nsub 64 \"     # 为 PREPFOLD 提供的其他选项" % (multiprocessing.cpu_count() / 4),
-        'FLAG_SINGLEPULSE_SEARCH':               "1                # 是否进行单脉冲搜索？（1=是，0=否）",
         'SINGLEPULSE_SEARCH_FLAGS':              "\"\"             # 进行单脉冲搜索时为 SINGLE_PULSE_SEARCH.py 提供的其他选项",
-        'USE_CUDA':                              "%s               # 是否使用 GPU 加速？（1=是，0=否）" % use_cuda,
-        'CUDA_IDS':                              "0                # 使用的 NVIDIA GPU 的 ID（用逗号分隔，例如 \"0,1,2,3\" - 使用 'nvidia-smi' 检查）",
-        'NUM_SIMULTANEOUS_JERKSEARCHES':         "%-4d             # 同时运行的jerk search实例数量" % (multiprocessing.cpu_count()),
-        'NUM_SIMULTANEOUS_PREPFOLDS':            "4                # 同时运行的 prepfold 实例的最大数量",
-        'NUM_SIMULTANEOUS_PREPSUBBANDS':         "%-4d             # 同时运行的 prepsubband 实例的最大数量" % (multiprocessing.cpu_count() / 4),
-        'MAX_SIMULTANEOUS_DMS_PER_PREPSUBBAND':  "1000             # prepsubband 一次处理的最大 DM 值数量（最大 1000）",
-        'NUM_SIMULTANEOUS_SINGLEPULSE_SEARCHES': "%-4d             # 同时运行的单脉冲搜索实例数量" % (multiprocessing.cpu_count()),
+
         'FAST_BUFFER_DIR':                       "\"\"             # 快速内存缓冲区路径（可选，最小化 I/O 瓶颈）",
         'FLAG_KEEP_DATA_IN_BUFFER_DIR':          "0                # 搜索后是否在缓冲区保留观测数据副本？（1=是，0=否）",
         'FLAG_REMOVE_FFTFILES':                  "0                # 搜索后是否删除 FFT 文件以节省磁盘空间？（1=是，0=否）",
@@ -160,7 +167,7 @@ def prep_configure(observation_filename):
             default_cfg_filename_existing = default_cfg_filename
             default_cfg_filename = "%s_2.cfg" % (os.path.basename(os.getcwd()))
             print("******************")
-            print_log(f"警告：{default_cfg_filename_existing} 已经存在！正在将默认配置保存到文件{default_cfg_filename}" ,masks=default_cfg_filename,color=colors.WARNING)
+            print_log(f"\n警告：{default_cfg_filename_existing} 已经存在！正在将默认配置保存到文件{default_cfg_filename}" ,masks=default_cfg_filename,color=colors.WARNING)
             print("******************")
             print()
     with open(default_cfg_filename, "w") as f:
@@ -175,16 +182,29 @@ def prep_configure(observation_filename):
                 formatted_value = value.strip()
             if i == 1:
                 write_section_header(f,'一般参数')
-            if i == 12:
-                write_section_header(f, '搜寻核心参数')
-            if i == 21:
-                write_section_header(f, '用PRESTO进行傅里叶域搜索')
-            if i == 52:
-                write_section_header(f, 'Single pulse search with PRESTO')  
-            if i == 9:
-                write_section_header(f, '计算/性能参数') 
-            if i in [17, 20, 25, 27, 29, 34, 40, 44, 57, 62]:
-                f.write("\n")              
+            if '是否执行ddplan' in formatted_value:
+                write_section_header(f, '核心参数')
+            if '多线程核数' in formatted_value:
+                write_section_header(f, '搜寻方案/性能参数')
+            if '使用 PRESTO accelsearch' in formatted_value: 
+                f.write("\n")
+            if '使用的子带数量' in formatted_value: 
+                f.write("\n")   
+            if 'RFIFIND 的 -time 选项值' in formatted_value:
+                write_section_header(f, 'RFI参数')
+            if '为 REALFFT 提供的其他选项' in formatted_value:
+                write_section_header(f, 'FFT参数')
+            if '在筛选时是否移除候选重复项' in formatted_value:
+                write_section_header(f, 'SIFTING参数')
+            if '是否折叠可能是已知脉冲星的候选项' in formatted_value:
+                write_section_header(f, 'FOLD参数')      
+            if '数据类型选项' in formatted_value:
+                write_section_header(f, '环境信息')                 
+            if '为 PREPDATA 提供的其他选项' in formatted_value:
+                write_section_header(f, '额外参数补充')  
+            if '快速内存缓冲区路径' in formatted_value:
+                write_section_header(f, 'ifok')  
+           
             f.write(f"{key.ljust(max_key_length)} {formatted_value}\n")
 
 
@@ -202,6 +222,7 @@ def prep_configure(observation_filename):
 # def main():
 cwd = os.getcwd()
 ps_pl_path = os.path.abspath(os.path.dirname(__file__))
+print_now()
 
 print(f"用法: {os.path.basename(sys.argv[0])} -obs <观测文件>")
 if (len(sys.argv) == 1 or ("-h" in sys.argv) or ("-help" in sys.argv) or ("--help" in sys.argv)):
@@ -218,6 +239,5 @@ else:
         if  (sys.argv[j] == "-obs"):
             obsname = sys.argv[j+1]
             prep_configure(obsname)
-
 
 
