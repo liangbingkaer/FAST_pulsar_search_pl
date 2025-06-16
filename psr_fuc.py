@@ -59,7 +59,7 @@ def print_log(*args, sep=' ', end='\n', file=None, flush=False, log_files=None, 
         - 'p'：仅打印到控制台
         - 'both'：同时写入文件并打印到控制台（默认）
     """
-    default_dir = os.path.join(os.getcwd(), 'logall.txt')
+    default_dir = os.path.join(cwd, 'logall.txt')
     if log_files is None:
         log_files = [default_dir]
     elif isinstance(log_files, str):
@@ -116,6 +116,10 @@ def time_consum(start_time,cmd,mode='both'):
 # 记录程序开始和结束
 def get_current_time_to_minute():
     return datetime.now().strftime('%Y-%m-%d %H:%M')
+
+def print_now():
+      time_str = datetime.now().strftime('%Y-%m-%d %H:%M')
+      print_log(f'\n时间戳：{time_str}')
 
 def print_program_message(phase):
     cwd = os.getcwd()
@@ -499,7 +503,7 @@ def prepdata2bary(infile,sourcename, out_dir,ifok_dir, log_dir, Nsamples=0, igno
     log_list = []
     for dat in infile:
         DM = extract_dm_part(dat)
-        outfile_basename = f"{sourcename}_bary_DM{DM}"
+        outfile_basename = f"{sourcename}_DM{DM}"
         datfile_abspath = os.path.join(out_dir, f"{outfile_basename}.dat")  #ifokfile
         inffile_abspath = os.path.join(out_dir, f"{outfile_basename}.inf")
         log_path = os.path.join(log_dir,f'BARY-{DM}.txt')
@@ -664,7 +668,7 @@ def dedisperse2cmd(infile,open_mask,sourcename, out_dir, log_dir, ignorechan_lis
 
                 LOG_basename="03_prepsubband_%s%s" % (open_mask,i)
                 log_abspath = "%s/LOG_%s.txt" % (log_dir, LOG_basename)
-                ifok_path = cwd+f'/ok-prepsubband-{open_mask}{i}.ifok'
+                ifok_path = cwd+f'/00_IFOK/ok-prepsubband-{open_mask}{i}.ifok'
 
                 flag_numout = ""
                 if i < N_schemes-1:
@@ -1225,6 +1229,32 @@ def ps2png(input_pattern, rotated=True, recursive=False, output_dir=None):
 
         except Exception as e:
             print(f"错误: {input_file} 转换失败 - {e}")
+
+def resize_and_pad(img, target_width):
+    """调整图像大小并填充以匹配目标宽度"""
+    w, h = img.size
+    if w != target_width:
+        new_height = int(h * (target_width / w))
+        img = img.resize((target_width, new_height), Image.LANCZOS)
+    return img
+
+def merge_images(file_a, file_b, output_path):
+    """合并两个图像并保存到指定路径"""
+    img_a = Image.open(file_a)
+    img_b = Image.open(file_b)
+
+    target_width = max(img_a.width, img_b.width)
+    img_a = resize_and_pad(img_a, target_width)
+    img_b = resize_and_pad(img_b, target_width)
+
+    spacing = 20
+    total_height = img_a.height + img_b.height + spacing
+    merged_img = Image.new('RGB', (target_width, total_height), color=(255, 255, 255))
+
+    merged_img.paste(img_a, (0, 0))
+    merged_img.paste(img_b, (0, img_a.height + spacing))
+
+    merged_img.save(output_path)
 
 def send_email(content, file_paths=None):
     # Email configuration
