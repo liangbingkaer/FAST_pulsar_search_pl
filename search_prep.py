@@ -224,6 +224,11 @@ cwd = os.getcwd()
 ps_pl_path = os.path.abspath(os.path.dirname(__file__))
 print_now()
 
+os.makedirs('RAW', exist_ok=True)
+for fits_file in glob.glob('*.fits'):
+    shutil.move(fits_file, os.path.join('RAW', fits_file))
+print('创建RAW成功')
+
 print(f"用法: {os.path.basename(sys.argv[0])} -obs <观测文件>")
 if (len(sys.argv) == 1 or ("-h" in sys.argv) or ("-help" in sys.argv) or ("--help" in sys.argv)):
     # 打印程序的用法
