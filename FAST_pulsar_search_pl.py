@@ -1182,7 +1182,6 @@ with open(SNR_file, 'w') as outfile:
         outfile.write(formatted_line + '\n')
 print_log("排序后的数据已保存到", SNR_file)
 
-   
 print_log('''\n ==================== Setp6:folding candidates=  ====================== \n''',color=colors.HEADER) 
 
 # print("\033[1m >> 提示:\033[0m 使用 '\033[1mtail -f %s/LOG_%s.txt\033[0m' 查看折叠进度" % (LOG_dir, LOG_basename))
@@ -1361,7 +1360,7 @@ if config.flag_step_folding == 1:
     print_log( "全部折叠运行时间为： " + execution_time_str + "\n")
     time.sleep(2)   
 
-    print_log('生产DM-SNR辅助图')
+    print_log('''\n ==================== '生产DM-SNR辅助图' ====================== \n''',color=colors.HEADER) 
     dm_snr_dir = os.path.join(dir_sifting,'dm_snr_plots')
     os.makedirs(dm_snr_dir, exist_ok=True)
 
@@ -1467,8 +1466,6 @@ if config.flag_step_folding == 1:
         plt.tight_layout()
         plt.savefig(file_b)
         plt.close()
-
-
 
         print('合并dat图')
 
