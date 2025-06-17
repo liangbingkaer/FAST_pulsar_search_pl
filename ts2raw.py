@@ -6,7 +6,7 @@ import shlex
 import string
 from psr_fuc import *
 
-def sort_numbers_from_filenames(folder='.'):
+def sort_numbers_from_filenames(folder='.'):  #为了保证后续的添加，此处修改为没有sorted
     """
     从指定文件夹中提取所有符合 A<number> 模式的文件名，提取其中的数字并按升序排序。
     
@@ -24,7 +24,8 @@ def sort_numbers_from_filenames(folder='.'):
         if match:
             numbers.append(int(match.group(1)))
 
-    return sorted(numbers)
+    # return sorted(numbers)
+    return numbers
 
 def find_cfg_file():
     # 检查当前目录、上级目录和上上级目录的 .cfg 文件
