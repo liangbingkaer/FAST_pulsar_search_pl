@@ -106,12 +106,21 @@ else:
     print("未找到.cfg文件")
 # source = parse_config_value(cfg_file, "SOURCE_NAME")
 label = parse_config_value(cfg_file, "SEARCH_LABEL")
+work_dir = parse_config_value(cfg_file, "ROOT_WORKDIR")
 part_ra = ra.split(":")
 source = part_ra[0] + part_ra[1]
 
+sourcename = parse_config_value(cfg_file, "SOURCE_NAME")
+search_label = parse_config_value(cfg_file, "SEARCH_LABEL")
+sourcename_mask = sourcename+'_'+search_label
+
+
 # 判断文件是否存在
-output_file = 'id_list.txt'
-output_path = os.path.abspath(output_file)
+folding_dir = os.path.join(work_dir, '05_FOLDING')
+fold2dir1 = os.path.join(folding_dir, 'raw_prep')
+fold2dir2 = os.path.join(folding_dir, 'raw_fold')
+
+output_file = os.path.join(fold2dir2, 'id_list.txt')
 
 if not os.path.exists(output_file):
     sorted_numbers = sort_numbers_from_filenames()
@@ -120,41 +129,34 @@ if not os.path.exists(output_file):
             f.write(f'{number}\n')
 
     print(sorted_numbers)
-    print(f'已生成，查看并修改：\n{output_path}')
+    print(f'已生成，查看并修改：\n{output_file}')
 else:
-    print(f'已修改{output_path}?\n读取其中的内容...')
+    print(f'已修改{output_file}?\n读取其中的内容...')
 
     with open(output_file, 'r') as f:
         sorted_numbers = [int(line.strip()) for line in f if line.strip().isdigit()]
     print(sorted_numbers)
 
 
-    work_dir = os.getcwd()
-    parent_dir = os.path.dirname(work_dir)
+    matching_folders = glob.glob(os.path.join(folding_dir, f'{sourcename_mask}*'))
+    if matching_folders:
+        target_folder = matching_folders[0]  #有时可能需要修改
 
-    fold_file = os.path.join(parent_dir, '05_FOLDING/script_fold_ts.txt')
-    # 检查文件是否存在，如果不存在则向上一层目录查找
-    while not os.path.exists(fold_file):
-        # 如果已经到达根目录，则终止循环
-        if parent_dir == os.path.dirname(parent_dir):
-            print("文件未找到，已到达根目录。")
-            break
-        # 向上一层目录查找
-        parent_dir = os.path.dirname(parent_dir)
-        fold_file = os.path.join(parent_dir, '05_FOLDING/script_fold_ts.txt')
-    else:
-        # 如果找到文件，则复制到当前工作目录
-        shutil.copy(fold_file, work_dir)
-        print(f"文件已复制到 {work_dir}")
+        fold_file = os.path.join(target_folder, 'script_fold_ts.txt')
+        os.makedirs(fold2dir1,exist_ok=True)
+        os.makedirs(fold2dir2,exist_ok=True)
+        shutil.copy(fold_file, fold2dir1)
+        shutil.copy(fold_file, fold2dir2)
+        print(f"文件已复制到 {fold2dir1}")
 
-    SNR_file = os.path.join(parent_dir, '04_SIFTING/cand_sift_SNR.txt')
-    shutil.copy(SNR_file, work_dir)
+    SNR_file = os.path.join(work_dir, '04_SIFTING/cand_sifting.txt')
+    shutil.copy(SNR_file, fold2dir1)
+    shutil.copy(SNR_file, fold2dir2)
 
-    maskfile = os.path.join(parent_dir, '01_RFIFIND/rfi0.1s_rfifind.mask')
-    inputfile = os.path.join(parent_dir, '*fits')
+    maskfile = os.path.join(work_dir, '01_RFIFIND/rfi0.1s_rfifind.mask')
+    inputfile = os.path.join(work_dir, 'RAW','*fits')
 
-    fold_file_raw = os.path.join(work_dir, 'fold_raw.sh')
-    root_workdir = parse_config_value(cfg_file, "ROOT_WORKDIR")
+    fold_file_raw = os.path.join(fold2dir2, 'fold_raw.sh')
 
     ##两种读取方式:推荐1，除非消色散文件被删除了
     idx = 0
@@ -192,16 +194,16 @@ else:
                     fft_z = fields[9]
                     accel = fields[10]
                     notes = ' '.join(fields[11:])
-                    print(frequency)
+                    print(period_clean)
 
                     type_par = string.ascii_uppercase[(idx - 1) % 26]  # 自动循环回 A-Z
 
                     # type_par = f"{chr(64 + idx)}"
                     outname = f'{type_par}{i}DM{dm}_{period_clean}ms'
-                    parname = os.path.join(work_dir,f'{type_par}{i}.par')
+                    parname = os.path.join(fold2dir1,f'{type_par}{i}.par')
                     write_par_file(source,ra,dec,frequency_clean,dm, parname)
 
-                    cmd = f'prepfold -topo -nosearch -nsub 64  -n 64 -noxwin  -par {parname} -mask {maskfile} -o {outname} {root_workdir}/RAW/*fits'
+                    cmd = f'prepfold -topo -nosearch -nsub 64  -n 64 -noxwin  -par {parname} -mask {maskfile} -o {outname} {work_dir}/RAW/*fits'
                     savefilenodb(fold_file_raw,cmd)
 
 
