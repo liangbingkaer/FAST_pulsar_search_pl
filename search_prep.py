@@ -182,7 +182,7 @@ def prep_configure(observation_filename):
                 formatted_value = value.strip()
             if i == 1:
                 write_section_header(f,'一般参数')
-            if '是否执行ddplan' in formatted_value:
+            if '是否执行质心修正' in formatted_value:
                 write_section_header(f, '核心参数')
             if '多线程核数' in formatted_value:
                 write_section_header(f, '搜寻方案/性能参数')
