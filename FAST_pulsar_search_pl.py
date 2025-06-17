@@ -1148,6 +1148,7 @@ if config.flag_step_sifting == 1 :
 
 
 #按信噪比进行排序
+dir_sifting = os.path.join(config.root_workdir, "04_SIFTING")
 input_file_path = os.path.join(dir_sifting,'cand_sifting.txt')  
 SNR_file = os.path.join(dir_sifting,'cand_sift_SNR.txt') 
 
