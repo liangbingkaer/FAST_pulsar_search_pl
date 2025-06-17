@@ -13,6 +13,8 @@ import numpy as np
 from psr_fuc import *
 from multiprocessing import Pool, cpu_count
 from tqdm import tqdm
+import matplotlib
+matplotlib.use('Agg') # 使用非GUI的后端
 import matplotlib.pyplot as plt
 import functools
 from datetime import datetime
