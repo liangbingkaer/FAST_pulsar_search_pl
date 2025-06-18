@@ -120,6 +120,8 @@ sourcename_mask = sourcename+'_'+search_label
 folding_dir = os.path.join(work_dir, '05_FOLDING')
 fold2dir1 = os.path.join(folding_dir, 'raw_prep')
 fold2dir2 = os.path.join(folding_dir, 'raw_fold')
+os.makedirs(fold2dir1,exist_ok=True)
+os.makedirs(fold2dir2,exist_ok=True)
 
 output_file = os.path.join(fold2dir2, 'id_list.txt')
 
@@ -144,8 +146,6 @@ else:
         target_folder = matching_folders[0]  #有时可能需要修改
 
         fold_file = os.path.join(target_folder, 'script_fold_ts.txt')
-        os.makedirs(fold2dir1,exist_ok=True)
-        os.makedirs(fold2dir2,exist_ok=True)
         shutil.copy(fold_file, fold2dir1)
         shutil.copy(fold_file, fold2dir2)
         print(f"文件已复制到 {fold2dir1}")
