@@ -96,15 +96,20 @@ def pool_fold(num_processes, task_name, cmd_list, ifok_list,log_list, work_dir=o
         progress_bar.close()
 
 cfg_file = find_cfg_file()
+current_path = os.getcwd()
+maskstr = os.path.basename(current_path)
+
 work_dir = parse_config_value(cfg_file, "ROOT_WORKDIR")
-log_dir = os.path.join(work_dir,'LOG','ts2raw')
+log_dir = os.path.join(work_dir,'LOG',f'ts2raw_{maskstr}')
 os.makedirs(log_dir,exist_ok=True)
-png_dir = os.path.join(work_dir,'06_PNG','raw')
+png_dir = os.path.join(work_dir,'06_PNG',maskstr)
 os.makedirs(png_dir,exist_ok=True)
 
-cmdfile_name = "fold_raw.sh"
 ncpus = 4
-
+cmdfile_name = "fold_raw.sh"
+if not os.path.isfile(cmdfile_name):
+    print(f"当前文件夹中不存在文件：{cmdfile_name}")
+    
 if (len(sys.argv) == 1 or ("-h" in sys.argv) or ("-help" in sys.argv) or ("--help" in sys.argv)):
     print("Usage: %s -cmdfile \"commands.sh\" -ncpus N " % (os.path.basename(sys.argv[0])))
 
@@ -113,6 +118,7 @@ else:
     for j in range(1, len(sys.argv)):
         if (sys.argv[j] == "-cmdfile"):
             cmdfile_name = sys.argv[j+1]
+            print(f"使用指定的：{cmdfile_name},注意不要使用绝对路径，这会导致折叠信息mask混淆")
         elif (sys.argv[j] == "-ncpus"):
             ncpus = int(sys.argv[j+1])
 
@@ -121,6 +127,32 @@ with open(cmdfile_name, 'r', encoding='utf-8') as file:
     lines = file.readlines()
 cmd_list = [line.strip() for line in lines]
 cmd_list = sorted(cmd_list)
+
+ifok_files = []
+logfiles = []
+for line in cmd_list:
+    nsub = line.split("-nsub")[1].strip().split()[0] if "-nsub" in line else None
+    n = line.split("-n")[1].strip().split()[0] if "-n " in line else None  # 注意避免匹配 "-noxwin"
+    parfile = line.split("-par")[1].strip().split()[0] if "-par" in line else None
+    maskfile = line.split("-mask")[1].strip().split()[0] if "-mask" in line else None
+    outname = line.split("-o")[1].strip().split()[0] if "-o" in line else None
+    datafile = line.strip().split()[-1]
+    ps_files = glob.glob(f"{outname}*.ps") 
+
+    if ps_files:
+        # ps_file = os.path.join(log_dir,ps_files[0])
+        png_file = os.path.join(png_dir,ps_files[0][:-3] + '.png')
+        ifok_files.append(png_file)
+    else:
+        ifok_files.append('/test/whysohard')
+
+    logfile = os.path.join(log_dir,f'LOG_{outname}.txt')
+    logfiles.append(logfile)
+
+ncpus = min(ncpus,len(cmd_list))
+print(ifok_files)
+pool_fold(ncpus,'fold',cmd_list,ifok_files,logfiles,work_dir = os.getcwd(),png_dir=png_dir)
+
 
 ifok_files = []
 logfiles = []
