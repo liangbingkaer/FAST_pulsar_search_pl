@@ -6,7 +6,7 @@ import shlex
 import string
 from psr_fuc import *
 
-def sort_numbers_from_filenames(folder='.'):  #为了保证后续的添加，此处修改为没有sorted
+def numbers_from_filenames(folder='.'):  #为了保证后续的添加，此处修改为没有sorted
     """
     从指定文件夹中提取所有符合 A<number> 模式的文件名，提取其中的数字并按升序排序。
     
@@ -106,6 +106,7 @@ if cfg_file:
 else:
     print("未找到.cfg文件")
 # source = parse_config_value(cfg_file, "SOURCE_NAME")
+ifbary = parse_config_value(cfg_file, 'IF_BARY')
 label = parse_config_value(cfg_file, "SEARCH_LABEL")
 work_dir = parse_config_value(cfg_file, "ROOT_WORKDIR")
 part_ra = ra.split(":")
@@ -118,15 +119,19 @@ sourcename_mask = sourcename+'_'+search_label
 
 # 判断文件是否存在
 folding_dir = os.path.join(work_dir, '05_FOLDING')
-fold2dir1 = os.path.join(folding_dir, 'raw_prep')
-fold2dir2 = os.path.join(folding_dir, 'raw_fold')
-os.makedirs(fold2dir1,exist_ok=True)
-os.makedirs(fold2dir2,exist_ok=True)
+if ifbary == '1':
+    fold2dir1 = os.path.join(folding_dir, 'raw_prep')
+    fold2dir2 = os.path.join(folding_dir, 'raw_fold')
+    os.makedirs(fold2dir1,exist_ok=True)
 
+else:
+    fold2dir2 = os.path.join(folding_dir, 'raw')
+os.makedirs(fold2dir2,exist_ok=True)
 output_file = os.path.join(fold2dir2, 'id_list.txt')
 
 if not os.path.exists(output_file):
-    sorted_numbers = sort_numbers_from_filenames()
+    numbers = numbers_from_filenames()
+    sorted_numbers = sorted((numbers))
     with open(output_file, 'w') as f:
         for number in sorted_numbers:
             f.write(f'{number}\n')
@@ -140,73 +145,92 @@ else:
         sorted_numbers = [int(line.strip()) for line in f if line.strip().isdigit()]
     print(sorted_numbers)
 
+    if ifbary == '1':
+        matching_folders = glob.glob(os.path.join(folding_dir, f'{sourcename_mask}*'))
+        if matching_folders:
+            target_folder = matching_folders[0]  #有时可能需要修改
 
-    matching_folders = glob.glob(os.path.join(folding_dir, f'{sourcename_mask}*'))
-    if matching_folders:
-        target_folder = matching_folders[0]  #有时可能需要修改
+            fold_file = os.path.join(target_folder, 'script_fold_ts.txt')
 
-        fold_file = os.path.join(target_folder, 'script_fold_ts.txt')
-        shutil.copy(fold_file, fold2dir1)
-        shutil.copy(fold_file, fold2dir2)
-        print(f"文件已复制到 {fold2dir1}")
+            shutil.copy(fold_file, fold2dir1)
+            shutil.copy(fold_file, fold2dir2)
+            print(f"文件已复制到 {fold2dir1}")
 
-    SNR_file = os.path.join(work_dir, '04_SIFTING/cand_sifting.txt')
-    shutil.copy(SNR_file, fold2dir1)
-    shutil.copy(SNR_file, fold2dir2)
+        SNR_file = os.path.join(work_dir, '04_SIFTING/cand_sifting.txt')
+        shutil.copy(SNR_file, fold2dir1)
+        shutil.copy(SNR_file, fold2dir2)
 
-    maskfile = os.path.join(work_dir, '01_RFIFIND/rfi0.1s_rfifind.mask')
-    inputfile = os.path.join(work_dir, 'RAW','*fits')
+        maskfile = os.path.join(work_dir, '01_RFIFIND/rfi0.1s_rfifind.mask')
+        inputfile = os.path.join(work_dir, 'RAW','*fits')
 
-    fold_file_raw = os.path.join(fold2dir2, 'fold_raw.sh')
+        fold_file_raw = os.path.join(fold2dir2, 'fold_raw.sh')
 
-    ##两种读取方式:推荐1，除非消色散文件被删除了
-    idx = 0
-    with open(fold_file, "r") as f:
-        for i, line in enumerate(f, start=1):  
-            if i in sorted_numbers:
-                idx += 1
+        ##两种读取方式:推荐1，除非消色散文件被删除了
+        idx = 0
+        with open(fold_file, "r") as f:
+            for i, line in enumerate(f, start=1):  
+                if i in sorted_numbers:
+                    idx += 1
 
-                dm = line.split("-dm")[1].split()[0].strip()
-                accelcand = line.split("-accelcand")[1].split()[0].strip()
-                accelfile = line.split("-accelfile")[1].split()[0].strip()
-                #outname = line.split("-o")[1].split()[0].strip()
-                datafile = line.strip().split()[-1]
+                    dm = line.split("-dm")[1].split()[0].strip()
+                    accelcand = line.split("-accelcand")[1].split()[0].strip()
+                    accelfile = line.split("-accelfile")[1].split()[0].strip()
+                    #outname = line.split("-o")[1].split()[0].strip()
+                    datafile = line.strip().split()[-1]
 
-                txtcand = os.path.splitext(accelfile)[0] #+ ".txtcand"
-                print(txtcand,accelcand)
-                
-                with open(txtcand, 'r') as file_cand:
-                    infos = file_cand.readlines()
-                    line_info = infos[int(accelcand)+2].strip()
+                    txtcand = os.path.splitext(accelfile)[0] #+ ".txtcand"
+                    print(txtcand,accelcand)
+                    
+                    with open(txtcand, 'r') as file_cand:
+                        infos = file_cand.readlines()
+                        line_info = infos[int(accelcand)+2].strip()
 
-                    print(line_info)
-                    fields = line_info.split() 
-                    cand = fields[0]
-                    sigma = fields[1]
-                    power = fields[2]
-                    num_power = fields[3]
-                    harm = fields[4]
-                    period = fields[5]
-                    frequency = fields[6]
-                    period_clean = period[:period.find("(")]
-                    frequency_clean = frequency[:frequency.find("(")]
-                    fft_r = fields[7]
-                    freq_deriv = fields[8]
-                    fft_z = fields[9]
-                    accel = fields[10]
-                    notes = ' '.join(fields[11:])
-                    print(period_clean)
+                        print(line_info)
+                        fields = line_info.split() 
+                        cand = fields[0]
+                        sigma = fields[1]
+                        power = fields[2]
+                        num_power = fields[3]
+                        harm = fields[4]
+                        period = fields[5]
+                        frequency = fields[6]
+                        period_clean = period[:period.find("(")]
+                        frequency_clean = frequency[:frequency.find("(")]
+                        fft_r = fields[7]
+                        freq_deriv = fields[8]
+                        fft_z = fields[9]
+                        accel = fields[10]
+                        notes = ' '.join(fields[11:])
+                        print(period_clean)
 
-                    type_par = string.ascii_uppercase[(idx - 1) % 26]  # 自动循环回 A-Z
+                        type_par = string.ascii_uppercase[(idx - 1) % 26]  # 自动循环回 A-Z
 
-                    # type_par = f"{chr(64 + idx)}"
-                    outname = f'{type_par}{i}DM{dm}_{period_clean}ms'
-                    parname = os.path.join(fold2dir1,f'{type_par}{i}.par')
-                    write_par_file(source,ra,dec,frequency_clean,dm, parname)
+                        # type_par = f"{chr(64 + idx)}"
+                        outname = f'{type_par}{i}DM{dm}_{period_clean}ms'
+                        parname = os.path.join(fold2dir1,f'{type_par}{i}.par')
+                        write_par_file(source,ra,dec,frequency_clean,dm, parname)
 
-                    cmd = f'prepfold -topo -nosearch -nsub 64  -n 64 -noxwin  -par {parname} -mask {maskfile} -o {outname} {work_dir}/RAW/*fits'
-                    savefilenodb(fold_file_raw,cmd)
+                        cmd = f'prepfold -topo -nodmsearch -nsub 64  -n 64 -noxwin  -par {parname} -mask {maskfile} -o {outname} {work_dir}/RAW/*fits'
+                        savefilenodb(fold_file_raw,cmd)
+    else:
+        matching_folders = glob.glob(os.path.join(work_dir, '06_PNG', f'{sourcename_mask}*dat'))
+        if matching_folders:
+            target_folder = matching_folders[0]  
 
+            fold_file = os.path.join(target_folder, 'script_fold_raw.txt')
+        
+            shutil.copy(fold_file, fold2dir2)
+            # print(f"文件已复制到 {fold2dir2}")
+
+            fold_file_raw = os.path.join(fold2dir2, 'fold_raw.sh')
+
+            idx = 0
+            with open(fold_file, "r") as f:
+                for i, line in enumerate(f, start=1):  
+                    if i in sorted_numbers:
+                        savefilenodb(fold_file_raw,line.rstrip('\n'))
+
+            print(f"请运行文件 {fold_file_raw}进行折叠")
 
                 
 
