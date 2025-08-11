@@ -1532,6 +1532,65 @@ email_content += f'png文件路径：{png_dir}\n'
 # 发送邮件
 # send_email(email_content, file_paths)
 
+def single2cmd(infile_list,sourcename, out_dir,ifok_dir, log_dir, other_flags="", presto_env=os.environ['PRESTO']):
+    cmd_single_list=[]
+    ifok_list = []
+    log_list = []
+
+    for dat in infile_list:
+        DM = extract_dm_part(dat)
+        outfile_basename = f"{sourcename}_DM{DM}"
+        datfile = os.path.basename(dat)
+        
+        cmd_single = f'single_pulse_search.py {other_flags}  {datfile}' #不能使用绝对路径
+        ifokfile = os.path.join(ifok_dir,f'single-{DM}.ifok')
+        log_file = os.path.join(log_dir,f'LOG_07-single-{DM}.txt')
+
+        cmd_single_list.append(cmd_single)
+        ifok_list.append(ifokfile)
+        log_list.append(log_file)
+        file_script_prepdata_abspath = "%s/%s" % (out_dir, 'single_script.txt')
+        write2file(cmd_single,file_script_prepdata_abspath)
+
+    return cmd_single_list,ifok_list,log_list  
+
+if config.flag_singlepulse_search == 1 and config.flag_step_singlepulse_search == 1:
+    print_log("\n ====================STEP 7 STEP 6 - SINGLE-PULSE SEARCH (PRESTO)====================== \n",color=colors.HEADER)
+    dir_singlepulse_search = os.path.join(config.root_workdir, "07_SINGLEPULSE")
+    makedir(dir_singlepulse_search)
+    ifok_dir07 = os.path.join(ifok_dir,'07_single')
+    LOG_dir07 = os.path.join(LOG_dir,'07_single')
+    makedir(ifok_dir07)
+    makedir(LOG_dir07)
+
+    singlepulse_search_flags = config.singlepulse_search_flags
+    dat_names = sorted([os.path.abspath(os.path.join(dir_dedispersion, file)) for file in os.listdir(dir_dedispersion) if file.endswith('.dat')])
+    inf_names = sorted([os.path.abspath(os.path.join(dir_dedispersion, file)) for file in os.listdir(dir_dedispersion) if file.endswith('.inf') and not file.endswith('_red.inf')])
+    all_files = dat_names + inf_names
+    for file_path in all_files:
+        link_name = os.path.join(dir_singlepulse_search, os.path.basename(file_path))
+        if not os.path.exists(link_name):
+            os.symlink(file_path, link_name)
+
+    single_cmd_list,ifok_list,log_list = single2cmd(dat_names,sourcename_mask, dir_singlepulse_search,ifok_dir07, LOG_dir07, other_flags=singlepulse_search_flags,presto_env=os.environ['PRESTO'])
+    
+    print_log(f'并行单脉冲搜寻:核数{n_pool}/{cpu_count()}',masks=str(n_pool),color=colors.HEADER)
+    pool(n_pool,'single',single_cmd_list,ifok_list,log_list,work_dir = dir_singlepulse_search)
+
+    os.chdir(dir_singlepulse_search)
+    command = f'single_pulse_search.py -b -m 200 *_DM*.singlepulse'
+    print (command)
+    os.system(command)
+    write2file(command,f'{dir_singlepulse_search}/single_cmd.sh')
+    ps2png(f'{dir_singlepulse_search}/*ps',rotated=False)
+
+    png_single_dir = os.path.join(workdir,'06_PNG','single')
+    print(f'mkdir {png_single_dir}')
+    makedir(png_single_dir)
+    #png_files = glob.glob(os.path.join(dir_singlepulse_search, '*.png'))
+    handle_files(dir_singlepulse_search, png_single_dir, 'copy', '*.png')
+
+
 print_program_message('end')
 
 
