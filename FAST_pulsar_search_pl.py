@@ -14,7 +14,7 @@ from psr_fuc import *
 from multiprocessing import Pool, cpu_count
 from tqdm import tqdm
 import matplotlib
-matplotlib.use('Agg') # 使用非GUI的后端
+matplotlib.use('Agg') 
 import matplotlib.pyplot as plt
 import functools
 from datetime import datetime
@@ -128,6 +128,7 @@ class Pulsar(object):
             self.v_los_max = 0
             self.doppler_factor = 1e-4  # 考虑地球绕太阳运动引起的多普勒效应
 
+import traceback
 class Observation(object):
     counter = 0  # 用于控制只打印第一个实例信息
 
@@ -135,8 +136,8 @@ class Observation(object):
         self.__class__.counter += 1
         self.show_log = (self.__class__.counter == 1)
 
-        if self.show_log:
-            print_log(f"\n正在读取{file_name}文件的绝对路径、文件名和扩展名....", color=colors.HEADER)
+        # if self.show_log:
+        #     print("\r正在读取文件信息...", end="", flush=True)
         self.file_abspath = os.path.abspath(file_name)
         self.file_nameonly = self.file_abspath.split("/")[-1]
         self.file_basename, self.file_extension = os.path.splitext(self.file_nameonly)
@@ -144,7 +145,7 @@ class Observation(object):
 
         if data_type == "filterbank":
             if self.show_log:
-                print_log("\n正在读取filterbank文件....", color=colors.HEADER)
+                print("\r正在读取filterbank文件信息...", end="", flush=True)
             try:
                 object_file = filterbank.FilterbankFile(self.file_abspath)
                 self.N_samples = object_file.nspec
@@ -162,7 +163,7 @@ class Observation(object):
                 self.source_name = object_file.header['source_name'].strip()
             except ValueError:
                 if self.show_log:
-                    print_log("警告：读取时出现值错误！尝试使用PRESTO的'readfile'获取必要信息...", color=colors.WARNING), print()
+                    print("\r警告：读取时出现值错误！尝试使用PRESTO的'readfile'获取必要信息...", end="", flush=True)
                 try:
                     self.N_samples = np.float64(readfile_with_str(f"readfile {self.file_abspath}", "grep 'Spectra per file'").split("=")[-1].strip())
                     self.t_samp_s = 1.0e-6 * float(readfile_with_str(f"readfile {file_name}", "grep 'Sample time (us)'").split("=")[-1].strip())
@@ -176,21 +177,10 @@ class Observation(object):
                     self.freq_low_MHz = np.float64(readfile_with_str(f"readfile {file_name}", "grep 'Low channel (MHz)'").split("=")[-1].strip())
                     self.freq_central_MHz = (self.freq_high_MHz + self.freq_low_MHz) / 2.0
                     if self.show_log:
-                        print_log('readfile读取信息成功', color=colors.OKGREEN)
-                        print_log(f"N_samples: {self.N_samples}")
-                        print_log(f"t_samp_s: {self.t_samp_s}")
-                        print_log(f"T_obs_s: {self.T_obs_s}", color=colors.BOLD)
-                        print_log(f"nbits: {self.nbits}")
-                        print_log(f"nchan: {self.nchan}")
-                        print_log(f"chanbw_MHz: {self.chanbw_MHz}")
-                        print_log(f"bw_MHz: {self.bw_MHz}", color=colors.BOLD)
-                        print_log(f"Tstart_MJD: {self.Tstart_MJD}")
-                        print_log(f"freq_high_MHz: {self.freq_high_MHz}")
-                        print_log(f"freq_central_MHz: {self.freq_central_MHz}")
-                        print_log(f"freq_low_MHz: {self.freq_low_MHz}")
+                        print("\rreadfile读取信息成功", end="", flush=True)
                 except:
                     if self.show_log:
-                        print_log("警告：'readfile'失败。尝试使用'header'获取必要信息...", color=colors.WARNING)
+                        print("\r警告：'readfile'失败。尝试使用'header'获取必要信息...", end="", flush=True)
                     self.N_samples = np.abs(int(get_command_output("header %s -nsamples" % (self.file_abspath)).split()[-1]))
                     self.t_samp_s = np.float64(get_command_output("header %s -tsamp" % (self.file_abspath)).split()[-1]) * 1.0e-6
                     self.T_obs_s = np.float64(get_command_output("header %s -tobs" % (self.file_abspath)).split()[-1])
@@ -204,52 +194,62 @@ class Observation(object):
                     self.freq_central_MHz = self.freq_high_MHz - 0.5 * self.bw_MHz
                     self.freq_low_MHz = self.freq_high_MHz - self.bw_MHz
                     if self.show_log:
-                        print_log(f"N_samples: {self.N_samples}")
-                        print_log(f"t_samp_s: {self.t_samp_s} s")
-                        print_log(f"T_obs_s: {self.T_obs_s} s", color=colors.BOLD)
-                        print_log(f"nbits: {self.nbits} bits")
-                        print_log(f"nchan: {self.nchan} channels")
-                        print_log(f"chanbw_MHz: {self.chanbw_MHz} MHz")
-                        print_log(f"bw_MHz: {self.bw_MHz} MHz", color=colors.BOLD)
-                        print_log(f"backend: {self.backend}")
-                        print_log(f"Tstart_MJD: {self.Tstart_MJD}")
-                        print_log(f"freq_high_MHz: {self.freq_high_MHz} MHz")
-                        print_log(f"freq_central_MHz: {self.freq_central_MHz} MHz")
-                        print_log(f"freq_low_MHz: {self.freq_low_MHz} MHz")
+                        print("\rheader读取信息成功", end="", flush=True)
 
         elif data_type == "psrfits":
-            if self.show_log:
-                print_log("\n正在读取PSRFITS文件....", color=colors.HEADER)
+            # 取消之前的 show_log 打印
             if psrfits.is_PSRFITS(file_name):
-                if self.show_log:
-                    print_log("文件'%s'被正确识别为PSRFITS格式" % (file_name))
-                object_file = psrfits.PsrfitsFile(self.file_abspath)
-                self.bw_MHz = object_file.specinfo.BW
-                self.N_samples = object_file.specinfo.N
-                self.T_obs_s = object_file.specinfo.T
-                self.backend = object_file.specinfo.backend
-                self.nbits = object_file.specinfo.bits_per_sample
-                self.date_obs = object_file.specinfo.date_obs
-                self.dec_deg = object_file.specinfo.dec2000
-                self.dec_str = object_file.specinfo.dec_str
-                self.chanbw_MHz = object_file.specinfo.df
-                self.t_samp_s = object_file.specinfo.dt
-                self.freq_central_MHz = object_file.specinfo.fctr
-                self.receiver = object_file.specinfo.frontend
-                self.freq_high_MHz = object_file.specinfo.hi_freq
-                self.freq_low_MHz = object_file.specinfo.lo_freq
-                self.MJD_int = object_file.specinfo.mjd
-                self.MJD_sec = object_file.specinfo.secs
-                self.Tstart_MJD = self.MJD_int + np.float64(self.MJD_sec / 86400.)
-                self.nchan = object_file.specinfo.num_channels
-                self.observer = object_file.specinfo.observer
-                self.project = object_file.specinfo.project_id
-                self.ra_deg = object_file.specinfo.ra2000
-                self.ra_str = object_file.specinfo.ra_str
-                self.seconds_of_day = object_file.specinfo.secs
-                self.source_name = object_file.specinfo.source
-                self.telescope = object_file.specinfo.telescope
+                try:
+                    object_file = psrfits.PsrfitsFile(self.file_abspath)
+                    self.bw_MHz = object_file.specinfo.BW
+                    self.N_samples = object_file.specinfo.N
+                    self.T_obs_s = object_file.specinfo.T
+                    self.backend = object_file.specinfo.backend
+                    self.nbits = object_file.specinfo.bits_per_sample
+                    self.date_obs = object_file.specinfo.date_obs
+                    self.dec_deg = object_file.specinfo.dec2000
+                    self.dec_str = object_file.specinfo.dec_str
+                    self.chanbw_MHz = object_file.specinfo.df
+                    self.t_samp_s = object_file.specinfo.dt
+                    self.freq_central_MHz = object_file.specinfo.fctr
+                    self.receiver = object_file.specinfo.frontend
+                    self.freq_high_MHz = object_file.specinfo.hi_freq
+                    self.freq_low_MHz = object_file.specinfo.lo_freq
+                    self.MJD_int = object_file.specinfo.mjd
+                    self.MJD_sec = object_file.specinfo.secs
+                    self.Tstart_MJD = self.MJD_int + np.float64(self.MJD_sec / 86400.)
+                    self.nchan = object_file.specinfo.num_channels
+                    self.observer = object_file.specinfo.observer
+                    self.project = object_file.specinfo.project_id
+                    self.ra_deg = object_file.specinfo.ra2000
+                    self.ra_str = object_file.specinfo.ra_str
+                    self.seconds_of_day = object_file.specinfo.secs
+                    self.source_name = object_file.specinfo.source
+                    self.telescope = object_file.specinfo.telescope
 
+                except Exception:
+                    print(f"\n读取PSRFITS文件'{file_name}'时发生异常！详细错误信息如下：")
+                    traceback.print_exc()
+
+                    parts = self.file_abspath.split(os.sep)
+                    try:
+                        raw_index = parts.index('RAW')
+                        base_dir = os.sep.join(parts[:raw_index])  # RAW所在的上一级目录
+                        error_dir = os.path.join(base_dir, 'error')
+                    except ValueError:
+                        # 没找到RAW，放当前文件夹下的error
+                        error_dir = os.path.join(os.path.dirname(self.file_abspath), 'error')
+
+                    if not os.path.exists(error_dir):
+                        os.makedirs(error_dir)
+
+                    dst_path = os.path.join(error_dir, os.path.basename(self.file_abspath))
+                    try:
+                        shutil.move(self.file_abspath, dst_path)
+                        print(f"已将出错文件移动到：{dst_path}")
+                    except Exception as e:
+                        print(f"移动出错文件失败: {e}")
+                        
 class SurveyConfiguration(object):
         def __init__(self, config_filename):
                 self.config_filename = config_filename
@@ -459,6 +459,10 @@ elif obsname != "":
             config.folder_datafiles           = os.path.dirname(os.path.abspath(obsname)) 
 
 config.list_datafiles_abspath = [os.path.join(config.folder_datafiles, x) for x in config.list_datafiles]  #每个文件的绝对路径
+# sorted_files = sorted(config.list_datafiles_abspath)
+# config.list_Observations = [Observation(sorted_files[0], config.data_type)]
+
+
 config.list_Observations = [Observation(x, config.data_type) for x in config.list_datafiles_abspath]  #生成类属性
 config.file_common_birdies = os.path.join(config.root_workdir, "common_birdies.txt")
 
@@ -1242,7 +1246,8 @@ with open(input_file_path, "r") as f:  #未使用SNR，使用sigma
             other_flags_prepfold = config.prepfold_flags
             if '-nsub' not in other_flags_prepfold:
                 other_flags_prepfold = f"{other_flags_prepfold} -nsub {nchan}"
-
+                
+            fold_raw_file = f"{png_dir}/script_fold_raw.txt"
             if config.flag_fold_timeseries == 1:
                 file_script_fold_name = "script_fold_ts.txt"
                 file_script_fold_abspath = f"{png_dir}/{file_script_fold_name}"
@@ -1260,6 +1265,9 @@ with open(input_file_path, "r") as f:  #未使用SNR，使用sigma
                 p1.append(png1)
                 l1.append(log1)
 
+                cmd_prepfold2 = f"prepfold {other_flags_prepfold} -noxwin -dm {dm} -accelcand {candnum} -accelfile {dir_dedispersion}/{cand_file}.cand  {flag_ignorechan} -mask {mask_file_path} -o {outname}_raw_DM{dm}_{str_zmax_wmax}  {workdir+'/RAW/'+obsname }"
+                write2file(cmd_prepfold2,fold_raw_file)
+
             if config.flag_fold_rawdata == 1:
                 if ifbary == 1:
                      print(f'请注意数据长度，默认折叠fit无质心修正')
@@ -1276,7 +1284,8 @@ with open(input_file_path, "r") as f:  #未使用SNR，使用sigma
                 c2.append(cmd_prepfold2) 
                 file_script_fold_abspath = f"{png_dir}/{file_script_fold_name}"
                 write2file(cmd_prepfold2,file_script_fold_abspath)
-                write2file(cmd_prepfold1,file_script_fold_abspath1)
+                write2file(cmd_prepfold2,file_script_fold_abspath1)
+                write2file(cmd_prepfold2,fold_raw_file)
                 p2.append(png2)
                 l2.append(log2)               
             
@@ -1424,70 +1433,78 @@ if config.flag_step_folding == 1:
                 'info': candidate_info
             })
 
+    ID = 0
     for idx, candidate in enumerate(candidates, start=1):
-        candidate_info = candidate['info']
-        filename = f"A{idx}_DM{candidate_info['DM']}_{candidate_info['P_ms']}ms.png"
-        file_b = os.path.join(dm_snr_dir, filename)
+        ID += 1
+        if ID < fold_num_pl:
+            candidate_info = candidate['info']
+            filename = f"A{idx}_DM{candidate_info['DM']}_{candidate_info['P_ms']}ms.png"
+            file_b = os.path.join(dm_snr_dir, filename)
 
-        if os.path.exists(file_b):
-            print(f"文件已存在，跳过：{filename}") #output_path
-            continue  # 如果文件已存在则跳过
+            if os.path.exists(file_b):
+                print(f"文件已存在，跳过：{filename}") #output_path
+                continue  # 如果文件已存在则跳过
 
-        dm_list = candidate['dm_list']
-        sigma_list = candidate['sigma_list']
-        snr_list = candidate['snr_list']
+            dm_list = candidate['dm_list']
+            sigma_list = candidate['sigma_list']
+            snr_list = candidate['snr_list']
 
-        additional_info = (
-            f"DM/sigma: {candidate_info['DM']}/{candidate_info['sigma']}\n"
-            f"period: {candidate_info['P_ms']}(ms)\n"
-            f"z/cand:: {candidate_info['z']}/{candidate_info['candnum']}\n"
-            f"harm/FFT'z': {candidate_info['numharm']}/{candidate_info['z']}\n"
-        )
+            additional_info = (
+                f"DM/sigma: {candidate_info['DM']}/{candidate_info['sigma']}\n"
+                f"period: {candidate_info['P_ms']}(ms)\n"
+                f"z/cand:: {candidate_info['z']}/{candidate_info['candnum']}\n"
+                f"harm/FFT'z': {candidate_info['numharm']}/{candidate_info['z']}\n"
+            )
 
-        plt.figure(figsize=(10, 4))
-        sc = plt.scatter(dm_list, sigma_list, c=snr_list, cmap='jet', edgecolor='k')
-        plt.plot(dm_list, sigma_list, color='gray', alpha=0.6)
+            plt.figure(figsize=(10, 4))
+            sc = plt.scatter(dm_list, sigma_list, c=snr_list, cmap='jet', edgecolor='k')
+            plt.plot(dm_list, sigma_list, color='gray', alpha=0.6)
 
-        max_sigma = max(sigma_list)
-        max_sigma_index = sigma_list.index(max_sigma)
-        max_sigma_dm = dm_list[max_sigma_index]
+            max_sigma = max(sigma_list)
+            max_sigma_index = sigma_list.index(max_sigma)
+            max_sigma_dm = dm_list[max_sigma_index]
 
-        plt.axvline(
-            x=max_sigma_dm,
-            color='red',
-            linestyle='--',
-            label=additional_info  
-        )
+            plt.axvline(
+                x=max_sigma_dm,
+                color='red',
+                linestyle='--',
+                label=additional_info  
+            )
 
-        plt.xlabel('DM (pc cm⁻³)')
-        plt.ylabel('Sigma')
-        plt.title(f'A{idx}')
-        cbar = plt.colorbar(sc)
-        cbar.set_label('SNR')
+            plt.xlabel('DM (pc cm⁻³)')
+            plt.ylabel('Sigma')
+            plt.title(f'A{idx}')
+            cbar = plt.colorbar(sc)
+            cbar.set_label('SNR')
 
-        plt.legend()
-        plt.tight_layout()
-        plt.savefig(file_b)
-        plt.close()
+            plt.legend()
+            plt.tight_layout()
+            plt.savefig(file_b)
+            plt.close()
 
-        print('合并dat图')
+            print('合并dat图')
 
-        key_to_match = f"A{idx}_"
-        png_in_folder_b = os.listdir(png_dir)
-        matched_files = [os.path.join(png_dir, file) for file in png_in_folder_b if file.startswith(key_to_match)]
-        file_a = matched_files[0]
-        output_folder = png_dir+'_merged'
-        os.makedirs(output_folder, exist_ok=True)
-        
-        if file_a:
-            original_filename = os.path.basename(file_a)
-            name_without_ext, _ = os.path.splitext(original_filename)
-            output_filename = f"{name_without_ext}_merged.png"
-            output_path = os.path.join(output_folder, output_filename)
+            key_to_match = f"A{idx}_"
+            png_in_folder_b = os.listdir(png_dir)
+            matched_files = [os.path.join(png_dir, file) for file in png_in_folder_b if file.startswith(key_to_match)]
+            output_folder = png_dir + '_merged'
+            os.makedirs(output_folder, exist_ok=True)
+            shutil.copy(fold_raw_file,output_folder)
+            if matched_files:
+                file_a = matched_files[0]
 
-            print(f"正在合并: {file_a} + {file_b} -> {output_path}")
-            merge_images(file_a, file_b, output_path)
-        print(f'共保存 {len(candidates)} 张DM辅助图到目录: {dm_snr_dir}')
+
+                original_filename = os.path.basename(file_a)
+                name_without_ext, _ = os.path.splitext(original_filename)
+                output_filename = f"{name_without_ext}_merged.png"
+                output_path = os.path.join(output_folder, output_filename)
+
+                print(f"正在合并: {file_a} + {file_b} -> {output_path}")
+                merge_images(file_a, file_b, output_path)
+            else:
+                print(f"Error: 没有找到以 '{key_to_match}' 开头的文件。")
+
+            print(f'共保存{fold_num_pl}/ {len(candidates)} 张DM辅助图到目录: {dm_snr_dir}')
 
 t_end = time.time()
 execution_time = t_end- t_start
