@@ -95,6 +95,23 @@ def pool_fold(num_processes, task_name, cmd_list, ifok_list,log_list, work_dir=o
     finally:
         progress_bar.close()
 
+ncpus = 4
+cmdfile_name = "fold_raw.sh"
+if not os.path.isfile(cmdfile_name):
+    print(f"当前文件夹中不存在文件：{cmdfile_name}")
+    
+if (len(sys.argv) == 1 or ("-h" in sys.argv) or ("-help" in sys.argv) or ("--help" in sys.argv)):
+    print("Usage: %s -cmdfile \"commands.sh\" -ncpus N " % (os.path.basename(sys.argv[0])))
+    print('将使用默认值')
+    sys.exit(0)  
+else:
+    for j in range(1, len(sys.argv)):
+        if (sys.argv[j] == "-cmdfile"):
+            cmdfile_name = sys.argv[j+1]
+            print(f"使用指定的：{cmdfile_name},注意不要使用绝对路径，这会导致折叠信息mask混淆")
+        elif (sys.argv[j] == "-ncpus"):
+            ncpus = int(sys.argv[j+1])
+
 cfg_file = find_cfg_file()
 current_path = os.getcwd()
 maskstr = os.path.basename(current_path)
@@ -104,24 +121,6 @@ log_dir = os.path.join(work_dir,'LOG',f'ts2raw_{maskstr}')
 os.makedirs(log_dir,exist_ok=True)
 png_dir = os.path.join(work_dir,'06_PNG',maskstr)
 os.makedirs(png_dir,exist_ok=True)
-
-ncpus = 4
-cmdfile_name = "fold_raw.sh"
-if not os.path.isfile(cmdfile_name):
-    print(f"当前文件夹中不存在文件：{cmdfile_name}")
-    
-if (len(sys.argv) == 1 or ("-h" in sys.argv) or ("-help" in sys.argv) or ("--help" in sys.argv)):
-    print("Usage: %s -cmdfile \"commands.sh\" -ncpus N " % (os.path.basename(sys.argv[0])))
-
-    print('将使用默认值')
-else:
-    for j in range(1, len(sys.argv)):
-        if (sys.argv[j] == "-cmdfile"):
-            cmdfile_name = sys.argv[j+1]
-            print(f"使用指定的：{cmdfile_name},注意不要使用绝对路径，这会导致折叠信息mask混淆")
-        elif (sys.argv[j] == "-ncpus"):
-            ncpus = int(sys.argv[j+1])
-
 
 with open(cmdfile_name, 'r', encoding='utf-8') as file:
     lines = file.readlines()
