@@ -110,7 +110,9 @@ ifbary = parse_config_value(cfg_file, 'IF_BARY')
 label = parse_config_value(cfg_file, "SEARCH_LABEL")
 work_dir = parse_config_value(cfg_file, "ROOT_WORKDIR")
 part_ra = ra.split(":")
-source = part_ra[0] + part_ra[1]
+part_dec = dec.split((":"))
+sign = "" if dec.startswith("-") else "+"
+source = part_ra[0] + part_ra[1] + sign + part_dec [0] + part_dec[1]
 
 sourcename = parse_config_value(cfg_file, "SOURCE_NAME")
 search_label = parse_config_value(cfg_file, "SEARCH_LABEL")
