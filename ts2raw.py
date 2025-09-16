@@ -4,6 +4,7 @@ import re
 import shutil
 import shlex
 import string
+from datetime import datetime
 from psr_fuc import *
 
 def numbers_from_filenames(folder='.'):  #为了保证后续的添加，此处修改为没有sorted
@@ -114,6 +115,11 @@ part_dec = dec.split((":"))
 sign = "" if dec.startswith("-") else "+"
 source = part_ra[0] + part_ra[1] + sign + part_dec [0] + part_dec[1]
 
+fold_add = parse_config_value(cfg_file, "PREPFOLD_FLAGS")
+current_date = datetime.now().strftime("%Y-%m-%d")
+cmd_dir = os.path.join(work_dir,'06_PNG','cmd',current_date)
+os.makedirs(cmd_dir,exist_ok=True)
+
 sourcename = parse_config_value(cfg_file, "SOURCE_NAME")
 search_label = parse_config_value(cfg_file, "SEARCH_LABEL")
 sourcename_mask = sourcename+'_'+search_label
@@ -156,11 +162,13 @@ else:
 
             shutil.copy(fold_file, fold2dir1)
             shutil.copy(fold_file, fold2dir2)
+            shutil.copy(fold_file, cmd_dir)
             print(f"文件已复制到 {fold2dir1}")
 
         SNR_file = os.path.join(work_dir, '04_SIFTING/cand_sifting.txt')
         shutil.copy(SNR_file, fold2dir1)
         shutil.copy(SNR_file, fold2dir2)
+        shutil.copy(SNR_file, cmd_dir)
 
         maskfile = os.path.join(work_dir, '01_RFIFIND/rfi0.1s_rfifind.mask')
         inputfile = os.path.join(work_dir, 'RAW','*fits')
@@ -212,8 +220,10 @@ else:
                         parname = os.path.join(fold2dir1,f'{type_par}{i}.par')
                         write_par_file(source,ra,dec,frequency_clean,dm, parname)
 
-                        cmd = f'prepfold -topo -nodmsearch -nsub 64  -n 64 -noxwin  -par {parname} -mask {maskfile} -o {outname} {work_dir}/RAW/*fits'
+                        cmd = f'prepfold -topo {fold_add} -noxwin  -par {parname} -mask {maskfile} -o {outname} {work_dir}/RAW/*fits'
                         savefilenodb(fold_file_raw,cmd)
+                        shutil.copy(fold_file_raw, cmd_dir)
+
     else:
         matching_folders = glob.glob(os.path.join(work_dir, '06_PNG', f'{sourcename_mask}*dat'))
         if matching_folders:
@@ -231,7 +241,7 @@ else:
                 for i, line in enumerate(f, start=1):  
                     if i in sorted_numbers:
                         savefilenodb(fold_file_raw,line.rstrip('\n'))
-
+            shutil.copy(fold_file_raw, cmd_dir)
             print(f"请运行文件 {fold_file_raw}进行折叠")
 
                 
