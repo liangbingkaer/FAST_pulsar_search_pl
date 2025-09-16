@@ -11,13 +11,14 @@
 * 自定义邮箱发送折叠图
 * 默认折叠dat文件，添加snr-dm辅助判断图,人为选择待折叠序列
 * 命名逻辑优化
+* 添加 pysolator 可选
 
 
 ## 待补充内容
 * 支持 add-search 合并 fits 
 * 分段搜寻
 * jinglepulsar
-* 添加 pysolator 可选
+
 
 ## 使用
 ### 添加到环境变量
