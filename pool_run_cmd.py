@@ -6,8 +6,8 @@ import glob
 from psr_fuc import *
 
 def find_cfg_file():
-    # 检查当前目录、上级目录和上上级目录的 .cfg 文件
-    for folder in [".", "..", "../.."]:
+    # 检查当前目录、上级目录、上上级目录和上上上级目录的 .cfg 文件
+    for folder in [".", "..", "../..", "../../.."]:
         try:
             for fname in os.listdir(folder):
                 if fname.endswith(".cfg"):
@@ -142,8 +142,10 @@ for line in cmd_list:
         # ps_file = os.path.join(log_dir,ps_files[0])
         png_file = os.path.join(png_dir,ps_files[0][:-3] + '.png')
         ifok_files.append(png_file)
+        ps2png(os.path.join(os.getcwd(),'*ps'))
+        handle_files(work_dir, png_dir, 'copy','*png' )
     else:
-        ifok_files.append('/test/whysohard')
+        ifok_files.append('/test/where.png')
 
     logfile = os.path.join(log_dir,f'LOG_{outname}.txt')
     logfiles.append(logfile)
@@ -167,13 +169,15 @@ for line in cmd_list:
     if ps_files:
         # ps_file = os.path.join(log_dir,ps_files[0])
         png_file = os.path.join(png_dir,ps_files[0][:-3] + '.png')
+        ps2png(os.path.join(os.getcwd(),'*ps'))
+        handle_files(work_dir, png_dir, 'copy','*png' )
         ifok_files.append(png_file)
-    else:
-        ifok_files.append('/test/whysohard')
+#     else:
+#         ifok_files.append('/test/whysohard')
 
-    logfile = os.path.join(log_dir,f'LOG_{outname}.txt')
-    logfiles.append(logfile)
+#     logfile = os.path.join(log_dir,f'LOG_{outname}.txt')
+#     logfiles.append(logfile)
 
-ncpus = min(ncpus,len(cmd_list))
-print(ifok_files)
-pool_fold(ncpus,'fold',cmd_list,ifok_files,logfiles,work_dir = os.getcwd(),png_dir=png_dir)
+# ncpus = min(ncpus,len(cmd_list))
+# print(ifok_files)
+# pool_fold(ncpus,'fold',cmd_list,ifok_files,logfiles,work_dir = os.getcwd(),png_dir=png_dir)
