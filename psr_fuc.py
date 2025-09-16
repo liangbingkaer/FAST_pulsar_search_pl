@@ -435,17 +435,17 @@ def handle_files(directory, to_dir, action, pattern, whitelist=None):
     print(f"文件 {action} 操作成功")
 
 def extract_dm_part(file_path):
-    pattern = r"DM(.*?)(?=\.\w+$)"
+    pattern = r"DM([0-9]+(?:\.[0-9]+)?)"   # 只匹配 DM 后紧跟的数字(整数或小数)
     filename = os.path.basename(file_path)
-    # 使用正则表达式提取DM之后的部分
     DM = re.search(pattern, filename)
     if DM:
-        DM_value = DM.group(1)
-        # 将匹配到的部分转换为浮点数，并格式化为 "05.2f"
+        DM_value = DM.group(1)   # 已经干净，不会带 _p 或 .
         DM_formatted = f"{float(DM_value):05.2f}"
         return DM_formatted
     else:
-        return None  # 如果没有匹配到，返回None
+        return None
+
+
 
 # PREPDATA：对原始 FITS 文件进行去除 RFI、去除通道等预处理，生成 .dat 和 .inf 文件
 def prepdata(infile,sourcename, out_dir,ifok_dir, log_path, DM, Nsamples=0, ignorechan_list="",
@@ -1023,7 +1023,8 @@ def sift_candidates(work_dir,sourcename, log_dir,  dedispersion_dir, list_zmax, 
         log_abspath = "%s/LOG_%s.txt" % (log_dir, 'SIFTING')
         print("\033[1m >> TIP:\033[0m Check sifting output with '\033[1mcat %s\033[0m'" % (log_abspath))
 
-        list_DMs = [x.split("_ACCEL")[0].split("DM")[-1] for x in list_ACCEL_files]
+        # list_DMs = [x.split("_ACCEL")[0].split("DM")[-1] for x in list_ACCEL_files]
+        list_DMs = [float(re.search(r"DM([0-9]+(?:\.[0-9]+)?)", x).group(1)) for x in list_ACCEL_files if re.search(r"DM([0-9]+(?:\.[0-9]+)?)", x)]
         candidates = sifting.read_candidates(list_ACCEL_files, track=True)
 
         print("sift_candidates:: z = %d" % (z))
@@ -2065,12 +2066,12 @@ def check_prepdata_outfiles(basename, verbosity_level=0):
 
 
 
-def make_rfifind_mask(infile, out_dir, log_dir, LOG_basename, time=0.1, time_intervals_to_zap="", chans_to_zap="", other_flags="", presto_env=os.environ['PRESTO'],search_type= None,obsname = '*fits'):
+def make_rfifind_mask(infile, out_dir, log_dir, LOG_basename, time=0.1, time_intervals_to_zap="", chans_to_zap="",chans_to_ig="", other_flags="", presto_env=os.environ['PRESTO'],search_type= None,obsname = '*fits'):
         infile_nameonly = os.path.basename(infile)
         infile_basename = os.path.splitext(infile_nameonly)[0]
         parent_dir = os.path.dirname(infile)
         if search_type:
-               infile_basename = 'rfi0.1s'
+               infile_basename = f'rfi{time}s'
                infile = parent_dir+ '/'+obsname
 
         log_abspath = "%s/LOG_%s.txt" % (log_dir, LOG_basename)
@@ -2078,9 +2079,13 @@ def make_rfifind_mask(infile, out_dir, log_dir, LOG_basename, time=0.1, time_int
         flag_zapints = ""
         flag_zapchan = ""
         if time_intervals_to_zap != "":
-                flag_zapints = "-zapints %s" %  (time_intervals_to_zap)
+                flag_zapints = "-zapints %s" %  (time_intervals_to_zap)  #待检查
         if chans_to_zap != "":
-                flag_zapchan = "-zapchan %s" %  (chans_to_zap)
+                flag_zapchan = "-zapchan %s" %  (chans_to_ig)
+        else:
+            if chans_to_ig != "":
+                flag_zapchan = "-ignorechan %s" %  (chans_to_ig)
+
 
         cmd_rfifind = "rfifind %s -o %s -time %s %s %s %s" % (other_flags, infile_basename, time, flag_zapints, flag_zapchan, infile)
 
