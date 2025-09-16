@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
 Created on 2025.3.1
-Revised on 2025.8.11
+Revised on 2025.8.29
 @author: Long Peng
 @web page: https://www.plxray.cn/
 qq:2107053791
 
 FAST射电脉冲搜寻主程序
+add_RFI_png
 """
 
 import os,sys
@@ -255,7 +256,7 @@ class SurveyConfiguration(object):
         def __init__(self, config_filename):
                 self.config_filename = config_filename
                 self.list_datafiles = []
-                self.list_survey_configuration_ordered_params = ['OBSNAME',"SOURCE_NAME",'SEARCH_LABEL', 'DATA_TYPE','IF_BARY','RA','DEC','POOL_NUM ', 'ROOT_WORKDIR', 'PRESTO', 'PRESTO_GPU','IF_DDPLAN', 'DM_MIN', 'DM_MAX','DM_STEP', 'DM_COHERENT_DEDISPERSION', 'N_SUBBANDS', 'PERIOD_TO_SEARCH_MIN', 'PERIOD_TO_SEARCH_MAX', 'LIST_SEGMENTS', 'RFIFIND_TIME', 'RFIFIND_CHANS_TO_ZAP', 'RFIFIND_TIME_INTERVALS_TO_ZAP', 'IGNORECHAN_LIST', 'ZAP_ISOLATED_PULSARS_FROM_FFTS', 'ZAP_ISOLATED_PULSARS_MAX_HARM', 'FLAG_ACCELERATION_SEARCH', 'ACCELSEARCH_LIST_ZMAX', 'ACCELSEARCH_NUMHARM', 'FLAG_JERK_SEARCH', 'JERKSEARCH_ZMAX', 'JERKSEARCH_WMAX', 'JERKSEARCH_NUMHARM', 'SIFTING_FLAG_REMOVE_DUPLICATES', 'SIFTING_FLAG_REMOVE_DM_PROBLEMS', 'SIFTING_FLAG_REMOVE_HARMONICS', 'SIFTING_MINIMUM_NUM_DMS', 'SIFTING_MINIMUM_DM', 'SIFTING_SIGMA_THRESHOLD', 'FLAG_FOLD_KNOWN_PULSARS', 'FLAG_FOLD_TIMESERIES', 'FLAG_FOLD_RAWDATA','FLAG_NUM', 'RFIFIND_FLAGS', 'PREPDATA_FLAGS', 'PREPSUBBAND_FLAGS', 'REALFFT_FLAGS', 'REDNOISE_FLAGS', 'ACCELSEARCH_FLAGS', 'ACCELSEARCH_GPU_FLAGS', 'ACCELSEARCH_JERK_FLAGS', 'PREPFOLD_FLAGS', 'FLAG_SINGLEPULSE_SEARCH', 'SINGLEPULSE_SEARCH_FLAGS', 'USE_CUDA', 'CUDA_IDS', 'NUM_SIMULTANEOUS_JERKSEARCHES', 'NUM_SIMULTANEOUS_PREPFOLDS', 'NUM_SIMULTANEOUS_PREPSUBBANDS', 'MAX_SIMULTANEOUS_DMS_PER_PREPSUBBAND', 'FAST_BUFFER_DIR', 'FLAG_KEEP_DATA_IN_BUFFER_DIR', 'FLAG_REMOVE_FFTFILES', 'FLAG_REMOVE_DATFILES_OF_SEGMENTS', 'STEP_RFIFIND', 'STEP_ZAPLIST', 'STEP_DEDISPERSE', 'STEP_REALFFT', 'STEP_PERIODICITY_SEARCH', 'STEP_SIFTING', 'STEP_FOLDING', 'STEP_SINGLEPULSE_SEARCH']
+                self.list_survey_configuration_ordered_params = ['OBSNAME',"SOURCE_NAME",'SEARCH_LABEL', 'DATA_TYPE','IF_BARY','IF_PYSOLATOR','RA','DEC','POOL_NUM ', 'ROOT_WORKDIR', 'PRESTO', 'PRESTO_GPU','IF_DDPLAN', 'DM_MIN', 'DM_MAX','DM_STEP', 'DM_COHERENT_DEDISPERSION', 'N_SUBBANDS', 'PERIOD_TO_SEARCH_MIN', 'PERIOD_TO_SEARCH_MAX', 'LIST_SEGMENTS', 'RFIFIND_TIME', 'RFIFIND_CHANS_TO_ZAP', 'RFIFIND_TIME_INTERVALS_TO_ZAP', 'IGNORECHAN_LIST', 'ZAP_ISOLATED_PULSARS_FROM_FFTS', 'ZAP_ISOLATED_PULSARS_MAX_HARM', 'FLAG_ACCELERATION_SEARCH', 'ACCELSEARCH_LIST_ZMAX', 'ACCELSEARCH_NUMHARM', 'FLAG_JERK_SEARCH', 'JERKSEARCH_ZMAX', 'JERKSEARCH_WMAX', 'JERKSEARCH_NUMHARM', 'SIFTING_FLAG_REMOVE_DUPLICATES', 'SIFTING_FLAG_REMOVE_DM_PROBLEMS', 'SIFTING_FLAG_REMOVE_HARMONICS', 'SIFTING_MINIMUM_NUM_DMS', 'SIFTING_MINIMUM_DM', 'SIFTING_SIGMA_THRESHOLD', 'FLAG_FOLD_KNOWN_PULSARS', 'FLAG_FOLD_TIMESERIES', 'FLAG_FOLD_RAWDATA','FLAG_NUM', 'RFIFIND_FLAGS', 'PREPDATA_FLAGS', 'PREPSUBBAND_FLAGS', 'REALFFT_FLAGS', 'REDNOISE_FLAGS', 'ACCELSEARCH_FLAGS', 'ACCELSEARCH_GPU_FLAGS', 'ACCELSEARCH_JERK_FLAGS', 'PREPFOLD_FLAGS', 'FLAG_SINGLEPULSE_SEARCH', 'SINGLEPULSE_SEARCH_FLAGS', 'USE_CUDA', 'CUDA_IDS', 'NUM_SIMULTANEOUS_JERKSEARCHES', 'NUM_SIMULTANEOUS_PREPFOLDS', 'NUM_SIMULTANEOUS_PREPSUBBANDS', 'MAX_SIMULTANEOUS_DMS_PER_PREPSUBBAND', 'FAST_BUFFER_DIR', 'FLAG_KEEP_DATA_IN_BUFFER_DIR', 'FLAG_REMOVE_FFTFILES', 'FLAG_REMOVE_DATFILES_OF_SEGMENTS', 'STEP_RFIFIND', 'STEP_ZAPLIST', 'STEP_DEDISPERSE', 'STEP_REALFFT', 'STEP_PERIODICITY_SEARCH', 'STEP_SIFTING', 'STEP_FOLDING', 'STEP_SINGLEPULSE_SEARCH']
                 self.dict_survey_configuration = {}
                 config_file = open(config_filename, "r" )
 
@@ -277,6 +278,7 @@ class SurveyConfiguration(object):
                         elif key == "SEARCH_LABEL":                      self.search_label                     = self.dict_survey_configuration[key]
                         elif key == "DATA_TYPE":                         self.data_type                        = self.dict_survey_configuration[key]
                         elif key == "IF_BARY":                           self.ifbary                           = int(self.dict_survey_configuration[key])
+                        elif key == "IF_PYSOLATOR":                     self.ifpysolator                      = int(self.dict_survey_configuration[key])
                         elif key == "RA":                                self.ra                               = self.dict_survey_configuration[key]
                         elif key == "DEC":                               self.dec                              = self.dict_survey_configuration[key]
                         elif key == "POOL_NUM":                          self.pool_num                         = int(self.dict_survey_configuration[key])
@@ -396,11 +398,11 @@ class SurveyConfiguration(object):
         def print_configuration(self):
                 print_log("\n ====================打印配置信息：  ====================== \n",color=colors.HEADER)
                 # 遍历有序参数列表并打印每个参数及其值（按需修改）
-                important_param_list = ['OBSNAME',"SOURCE_NAME",'POOL_NUM','IF_BARY','IF_DDPLAN','DM_MIN','DM_MAX','DM_STEP','PERIOD_TO_SEARCH_MIN','PERIOD_TO_SEARCH_MAX','LIST_SEGMENTS','ACCELSEARCH_LIST_ZMAX','FLAG_JERK_SEARCH','SIFTING_MINIMUM_NUM_DMS','FLAG_FOLD_TIMESERIES','PREPSUBBAND_FLAGS','PREPFOLD_FLAGS','FLAG_SINGLEPULSE_SEARCH']
+                important_param_list = ['OBSNAME',"SOURCE_NAME",'SEARCH_LABEL','POOL_NUM','IF_BARY','IF_DDPLAN','DM_MIN','DM_MAX','DM_STEP','FLAG_SINGLEPULSE_SEARCH','IF_PYSOLATOR','PERIOD_TO_SEARCH_MIN','PERIOD_TO_SEARCH_MAX','LIST_SEGMENTS','ACCELSEARCH_LIST_ZMAX','FLAG_JERK_SEARCH','SIFTING_MINIMUM_NUM_DMS','FLAG_FOLD_TIMESERIES','PREPSUBBAND_FLAGS','PREPFOLD_FLAGS','FLAG_SINGLEPULSE_SEARCH']
                 for param in important_param_list:
                         print("%-32s %s" % (param, self.dict_survey_configuration[param]))
                 print()
-                time.sleep(2)
+                time.sleep(5)
 
 ### 数据需放在当前目录的RAW文件夹下
 print_program_message('start')
@@ -657,8 +659,10 @@ print_log("\n ====================STEP 1 - RFIFIND====================== \n",col
 
 rfifind_masks_dir = os.path.join(config.root_workdir, "01_RFIFIND")
 makedir(rfifind_masks_dir)
-basename = 'rfi0.1s'
-mask_file_path = f"{rfifind_masks_dir}/rfi0.1s_rfifind.mask"
+timebin_rfi = config.rfifind_time
+basename = f'rfi{timebin_rfi}s'
+mask_file_path = f"{rfifind_masks_dir}/rfi{timebin_rfi}s_rfifind.mask"
+ignorechan_list = config.ignorechan_list
 
 time.sleep(0.2)
 def check_rfifind_outfiles(out_dir, basename):
@@ -697,6 +701,7 @@ elif not flag_mask_present and config.flag_step_rfifind == 1:
         config.rfifind_time,
         config.rfifind_time_intervals_to_zap,
         config.rfifind_chans_to_zap,
+        config.ignorechan_list,
         config.rfifind_flags,
         config.presto_env,
         search_type=sourcename,
@@ -751,6 +756,7 @@ if os.path.exists(weights_file):
     print(f"共忽略了 {config.nchan_ignored} 个通道（共 {total_chans}，占 {ignored_percent:.2f}%）")
     print(f"被忽略的通道索引： {config.ignorechan_list}")
 
+ps2png(os.path.join(rfifind_masks_dir,'*ps'))
 time.sleep(1)
 
 print_log("\n ====================STEP 2 - BIRDIES AND ZAPLIST   ====================== \n",color=colors.HEADER)
@@ -895,7 +901,6 @@ zapfile = "%s/%s_DM00.00.zaplist" % (dir_birdies, sourcename_mask)
 dict_flag_steps = {'flag_step_dedisperse': config.flag_step_dedisperse, 'flag_step_realfft': config.flag_step_realfft, 'flag_step_periodicity_search': config.flag_step_periodicity_search}
 
 cpu_count()
-ignorechan_list = config.ignorechan_list
 nchan = config.list_Observations[0].nchan
 subbands = config.nsubbands
 num_simultaneous_prepsubbands = config.num_simultaneous_prepsubbands
@@ -948,7 +953,6 @@ if ifbary == 1:
     print_log('成功！')
     print_log('''\n ==================== ra,dec修正完毕  ====================== \n''',color=colors.HEADER)
 
-    #添加mask_file_path会报错
     prepdata_cmd_list,ifok_list,log_list = prepdata2bary(dat_names,sourcename_mask, bary_dir,ifok_dir03b, LOG_dir03b, Nsamples=0, ignorechan_list="",mask='', downsample_factor=1, other_flags=config.prepdata_flags,presto_env=os.environ['PRESTO'])
     
     print_log('''\n ==================== 3 -3  prepdata质心修正  ====================== \n''',color=colors.OKGREEN) 
@@ -960,7 +964,117 @@ if ifbary == 1:
 else:
     print_log('''\n ==================== 基于给予的参数将跳过质心修正，速度加快  ====================== \n''',color=colors.HEADER)
 
+def create_symlinks(source_files, target_dir):
+    """
+    为源文件列表在目标目录创建软链接
+    
+    参数:
+        source_files: 源文件路径列表
+        target_dir: 目标目录路径
+    """
+    for source_file in source_files:
+        # 检查源文件是否存在
+        if not os.path.exists(source_file):
+            print(f"警告: 源文件不存在 - {source_file}")
+            continue
+            
+        # 获取文件名（不含路径）
+        filename = os.path.basename(source_file)
+        # 目标链接路径
+        link_path = os.path.join(target_dir, filename)
+        
+        # 如果链接不存在则创建
+        if not os.path.exists(link_path):
+            os.symlink(source_file, link_path)
+            print(f"已创建软链接: {link_path} -> {source_file}")
 
+
+def get_q(work_dir):
+    """从DEORB.par文件计算并返回质量比q = Mp/Mc"""
+    par_path = os.path.join(work_dir, 'DEORB.par')
+    mtot = None
+    m2 = None  # 假设M2为伴星质量Mc
+    
+    with open(par_path, 'r') as f:
+        for line in f:
+            parts = line.strip().split()
+            if not parts:
+                continue
+            if parts[0] == 'MTOT':
+                mtot = float(parts[1])
+            elif parts[0] == 'M2':
+                m2 = float(parts[1])
+            if mtot is not None and m2 is not None:
+                break  # 找到所需参数即可停止
+    
+    if mtot is None or m2 is None:
+        raise ValueError("文件中缺少MTOT或M2参数")
+    
+    mp = mtot - m2  # 脉冲星质量
+    return round(mp / m2, 3)  # 返回保留三位小数的质量比q
+
+def deorb2cmd(infile_list,sourcename, out_dir,ifok_dir, log_dir, other_flags="", presto_env=os.environ['PRESTO']):
+    cmd_rfft_list=[]
+    ifok_list = []
+    log_list = []
+
+    for dat in infile_list:
+        DM = extract_dm_part(dat)
+        outfile_basename = f"{sourcename}_DM{DM}"
+        
+        cmd_realfft = f"pysolator -datfile {dat} -par DEORB.par -o {outfile_basename}" 
+        ifokfile = os.path.join(ifok_dir,f'real-{DM}.ifok')
+        log_file = os.path.join(log_dir,f'LOG_04-FFT-{DM}.txt')
+
+        cmd_rfft_list.append(cmd_realfft)
+        ifok_list.append(ifokfile)
+        log_list.append(log_file)
+        file_script_prepdata_abspath = "%s/%s" % (out_dir, 'realfft_script.txt')
+        write2file(cmd_realfft,file_script_prepdata_abspath)
+
+    return cmd_rfft_list,ifok_list,log_list  
+
+ifdeorb = config.ifpysolator
+if ifdeorb == 1:
+    print_log('''\n ==================== 进行去轨道调制-DEORB.par  ====================== \n''',color=colors.HEADER)
+    par_deorb = os.path.join(workdir,'DEORB.par')
+    if os.path.exists(par_deorb):
+        
+        q = get_q(workdir)
+        deorb_dir_work = os.path.join(config.root_workdir, f"03_deorb_prep",str(q)) 
+        makedir(deorb_dir_work)
+        deorb_dir = os.path.join(config.root_workdir, f"03_deorb",str(q))
+        makedir(deorb_dir)
+        shutil.copy(par_deorb,deorb_dir_work)
+    else:
+        print(f'')
+        os.system(exit)
+
+    ifok_dir03c = os.path.join(ifok_dir,'03c_deorb',str(q))
+    LOG_dir03c = os.path.join(LOG_dir,'03c_deorb',str(q))
+    makedir(ifok_dir03c)
+    makedir(LOG_dir03c)
+
+    dat_names = sorted([os.path.abspath(os.path.join(dir_dedispersion, file)) for file in os.listdir(dir_dedispersion) if file.endswith('.dat')])
+    inf_files = [file.replace(".dat", ".inf") for file in dat_names]
+
+    create_symlinks(dat_names, deorb_dir_work)
+    create_symlinks(inf_files, deorb_dir_work)
+
+    dat_names = sorted(file for file in os.listdir(dir_dedispersion) if file.endswith('.dat'))
+    deorb_cmd_list,ifok_list,log_list = deorb2cmd(dat_names,sourcename_mask+f'_{q}', deorb_dir_work,ifok_dir03c, LOG_dir03c, other_flags=config.realfft_flags,presto_env=os.environ['PRESTO'])
+    pool(n_pool,'deorb',deorb_cmd_list,ifok_list,log_list,work_dir = deorb_dir_work)
+
+    dat_names = sorted([os.path.abspath(os.path.join(deorb_dir_work, file)) for file in os.listdir(deorb_dir_work) if file.endswith('_p.dat')])
+    print(dat_names)
+    inf_files = [file.replace(".dat", ".inf") for file in dat_names]
+   
+    create_symlinks(dat_names, deorb_dir)
+    create_symlinks(inf_files, deorb_dir)
+    dir_dedispersion = deorb_dir
+    step = str(q)
+else:
+    step = ''
     
 list_zmax = config.accelsearch_list_zmax
 numharm = config.accelsearch_numharm
@@ -983,11 +1097,11 @@ if dict_flag_steps['flag_step_realfft'] == 1:
     # DM_trial_was_searched = check_if_DM_trial_was_searched(dat_names, list_zmax, flag_jerk_search, jerksearch_zmax, jerksearch_wmax)
 
     if ifbary == 1:
-        ifok_dir04 = os.path.join(ifok_dir,'04_baryfft')
-        LOG_dir04 = os.path.join(LOG_dir,'04_baryfft')
+        ifok_dir04 = os.path.join(ifok_dir,f'04_baryfft{step}')
+        LOG_dir04 = os.path.join(LOG_dir,f'04_baryfft{step}')
     else:
-        ifok_dir04 = os.path.join(ifok_dir,'04_FFT')
-        LOG_dir04 = os.path.join(LOG_dir,'04_FFT')
+        ifok_dir04 = os.path.join(ifok_dir,f'04_FFT{step}')
+        LOG_dir04 = os.path.join(LOG_dir,f'04_FFT{step}')
     makedir(ifok_dir04)
     makedir(LOG_dir04)
     realfft_cmd_list,ifok_list,log_list = realfft2cmd(dat_names,sourcename_mask, dir_dedispersion,ifok_dir04, LOG_dir04, other_flags=config.realfft_flags,presto_env=os.environ['PRESTO'])
@@ -1001,11 +1115,11 @@ if dict_flag_steps['flag_step_realfft'] == 1:
     inf_files = [file.replace(".fft", ".inf") for file in fft_names]
 
     if ifbary == 1:
-        ifok_dir04 = os.path.join(ifok_dir,'04_baryred')
-        LOG_dir04 = os.path.join(LOG_dir,'04_baryred')
+        ifok_dir04 = os.path.join(ifok_dir,f'04_baryred{step}')
+        LOG_dir04 = os.path.join(LOG_dir,f'04_baryred{step}')
     else:
-        ifok_dir04 = os.path.join(ifok_dir,'04_RED')
-        LOG_dir04 = os.path.join(LOG_dir,'04_RED')
+        ifok_dir04 = os.path.join(ifok_dir,'04_RED{step}')
+        LOG_dir04 = os.path.join(LOG_dir,f'04_RED{step}')
     makedir(ifok_dir04)
     makedir(LOG_dir04)
     red_cmd_list,ifok_list,log_list = rednoise2cmd(fft_names,sourcename_mask, dir_dedispersion,ifok_dir04, LOG_dir04, other_flags='',presto_env=os.environ['PRESTO'])
@@ -1031,11 +1145,11 @@ if dict_flag_steps['flag_step_realfft'] == 1:
     fft_names = sorted([os.path.abspath(os.path.join(dir_dedispersion, file)) for file in os.listdir(dir_dedispersion) if file.endswith('.fft') and not file.endswith('_red.fft')])
 
     if ifbary == 1:
-        ifok_dir04 = os.path.join(ifok_dir,'04_baryzap')
-        LOG_dir04 = os.path.join(LOG_dir,'04_baryzap')
+        ifok_dir04 = os.path.join(ifok_dir,f'04_baryzap{step}')
+        LOG_dir04 = os.path.join(LOG_dir,f'04_baryzap{step}')
     else:
-        ifok_dir04 = os.path.join(ifok_dir,'04_ZAP')
-        LOG_dir04 = os.path.join(LOG_dir,'04_ZAP')
+        ifok_dir04 = os.path.join(ifok_dir,f'04_ZAP{step}')
+        LOG_dir04 = os.path.join(LOG_dir,f'04_ZAP{step}')
     makedir(ifok_dir04)
     makedir(LOG_dir04)
     zap_cmd_list,ifok_list,log_list = zapbirds2cmd(fft_names, zapfile,ifok_dir04, LOG_dir04)
@@ -1059,11 +1173,11 @@ dict_env_zmax_any = {'PRESTO': presto_env_accelsearch_zmax_any, 'PATH': f"{prest
 
 if dict_flag_steps['flag_step_periodicity_search'] == 1:  
     if ifbary == 1:
-        ifok_dir05 = os.path.join(ifok_dir,'05_barysearch')
-        LOG_dir05 = os.path.join(LOG_dir,'05_barysearch')
+        ifok_dir05 = os.path.join(ifok_dir,f'05_barysearch{step}')
+        LOG_dir05 = os.path.join(LOG_dir,f'05_barysearch{step}')
     else:
-        ifok_dir05 = os.path.join(ifok_dir,'05_search')
-        LOG_dir05 = os.path.join(LOG_dir,'05_search')
+        ifok_dir05 = os.path.join(ifok_dir,f'05_search{step}')
+        LOG_dir05 = os.path.join(LOG_dir,f'05_search{step}')
     makedir(ifok_dir05)
     makedir(LOG_dir05)
     print_log(f'''\n ==================== 加速搜寻：zmax = {list_zmax}  ====================== \n''',color=colors.HEADER)                                                     
@@ -1102,6 +1216,8 @@ oksift = os.path.join(workdir,'ok-sifting')
 if config.flag_step_sifting == 1 :
     print_log('''\n ==================== Setp5:ddsifting candidates ====================== \n''',color=colors.HEADER) 
     dir_sifting = os.path.join(config.root_workdir, "04_SIFTING")
+    if ifdeorb == 1:
+        dir_sifting = os.path.join(config.root_workdir, "04_SIFTING",step)
     makedir(dir_sifting)
 
     flag_remove_duplicates = config.sifting_flag_remove_duplicates
@@ -1142,7 +1258,7 @@ if config.flag_step_sifting == 1 :
                 if line.startswith("#"):
                     print_log(line,log_files=info_sifting_file)
                     sifting.append(line)
-                if line.startswith(sourcename) or line.startswith('bary'):
+                if line.startswith(sourcename) or line.startswith('bary') or line.startswith('isol'):
                     print_log(line,log_files=info_sifting_file)
                     sifting.append(line) 
         with open(dir_sifting+'/cand_sifting.txt', "w") as f:
@@ -1156,6 +1272,8 @@ if config.flag_step_sifting == 1 :
 
 #按信噪比进行排序
 dir_sifting = os.path.join(config.root_workdir, "04_SIFTING")
+if ifdeorb == 1:
+    dir_sifting = os.path.join(config.root_workdir, "04_SIFTING",step)
 input_file_path = os.path.join(dir_sifting,'cand_sifting.txt')  
 SNR_file = os.path.join(dir_sifting,'cand_sift_SNR.txt') 
 
@@ -1193,9 +1311,9 @@ print_log("排序后的数据已保存到", SNR_file)
 print_log('''\n ==================== Setp6:folding candidates=  ====================== \n''',color=colors.HEADER) 
 
 # print("\033[1m >> 提示:\033[0m 使用 '\033[1mtail -f %s/LOG_%s.txt\033[0m' 查看折叠进度" % (LOG_dir, LOG_basename))
-dir_folding = os.path.join(config.root_workdir, "05_FOLDING",basename_only)
+dir_folding = os.path.join(config.root_workdir, "05_FOLDING",basename_only+step)
 makedir(dir_folding)
-LOG_dir06 = os.path.join(LOG_dir,'06_fold',basename_only)
+LOG_dir06 = os.path.join(LOG_dir,'06_fold',basename_only+step)
 makedir(LOG_dir06)
 
 # cmd_prepfold_list = []
@@ -1211,7 +1329,7 @@ with open(input_file_path, "r") as f:  #未使用SNR，使用sigma
     lines = f.readlines()
     n = 0
     for line in lines:
-        if line.startswith(sourcename) or line.startswith('bary'):
+        if line.startswith(sourcename) or line.startswith('bary')  or line.startswith('isol'):
             parts = line.split()
             candfile = parts[0]
             cand_file = candfile.split(":")[0]
