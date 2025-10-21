@@ -1180,7 +1180,7 @@ if dict_flag_steps['flag_step_periodicity_search'] == 1:
         LOG_dir05 = os.path.join(LOG_dir,f'05_search{step}')
     makedir(ifok_dir05)
     makedir(LOG_dir05)
-    print_log(f'''\n ==================== 加速搜寻：zmax = {list_zmax}  ====================== \n''',color=colors.HEADER)                                                     
+    print_log(f'''\n ==================== 加速度搜寻：zmax = {list_zmax}  ====================== \n''',color=colors.HEADER)                                                     
 
     dat_names = sorted([os.path.abspath(os.path.join(dir_dedispersion, file)) for file in os.listdir(dir_dedispersion) if file.endswith('.dat')])
     fft_files = [file.replace(".dat", ".fft") for file in dat_names]
@@ -1202,7 +1202,7 @@ if dict_flag_steps['flag_step_periodicity_search'] == 1:
             search_cmd_list,ifok_list,log_list = accelsearch2cmd(fft_files,ifok_dir05, LOG_dir05, numharm=numharm, zmax=z, other_flags=accelsearch_flags)
 
             print_log(f'并行周期搜寻:核数{n_pool}/{cpu_count()}',masks=str(n_pool),color=colors.HEADER)
-            pool(n_pool,'zap',search_cmd_list,ifok_list,log_list,work_dir = dir_dedispersion)
+            pool(n_pool,'search',search_cmd_list,ifok_list,log_list,work_dir = dir_dedispersion)
 
             for fft_path in fft_files:
                 if not check_accelsearch_result(fft_path, int(z),verbosity_level=0):  #打印详细信息verbosity_level=2
@@ -1376,7 +1376,7 @@ with open(input_file_path, "r") as f:  #未使用SNR，使用sigma
                 cmd_prepfold1 = f"prepfold {other_flags_prepfold} -noxwin -dm {dm} -accelcand {candnum} -accelfile {dir_dedispersion}/{cand_file}.cand -o {outname}_ts_DM{dm}_{str_zmax_wmax}  {file_to_fold}" #没有添加mask
                 #A9_AQLX-1_raw_DM11.50_z0_ACCEL_Cand_4.pfd.png
                 png1 = os.path.join(png_dir,f"{outname}_ts_DM{dm}_{str_zmax_wmax}_ACCEL_Cand_{candnum}.pfd.png")
-                log1 = os.path.join(LOG_dir06,f'fold_ts-{dm}.ifok')
+                log1 = os.path.join(LOG_dir06,f'fold_ts-{dm}-{p_ms:.6f}ms.ifok')
 
                 c1.append(cmd_prepfold1)
                 write2file(cmd_prepfold1,file_script_fold_abspath)
@@ -1398,7 +1398,7 @@ with open(input_file_path, "r") as f:  #未使用SNR，使用sigma
                 cmd_prepfold2 = f"prepfold {other_flags_prepfold} -noxwin -dm {dm} -accelcand {candnum} -accelfile {dir_dedispersion}/{cand_file}.cand  {flag_ignorechan} -mask {mask_file_path} -o {outname}_raw_DM{dm}_{str_zmax_wmax}    {file_to_fold}"
   
                 png2 = os.path.join(png_dir,f"{outname}_raw_DM{dm}_{str_zmax_wmax}_ACCEL_Cand_{candnum}.pfd.png")
-                log2 = os.path.join(LOG_dir06,f'fold_raw-{dm}.ifok')
+                log2 = os.path.join(LOG_dir06,f'fold_raw-{dm}-{p_ms:.6f}ms.ifok')
                 
                 c2.append(cmd_prepfold2) 
                 file_script_fold_abspath = f"{png_dir}/{file_script_fold_name}"
