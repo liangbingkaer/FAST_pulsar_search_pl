@@ -1325,11 +1325,14 @@ p2 = []
 l2 = []
 # ifok_prepfold_list = []
 # log_prepfold_list = []
-with open(input_file_path, "r") as f:  #未使用SNR，使用sigma
+import os  # 需确保导入os模块用于文件操作
+
+with open(input_file_path, "r") as f:
     lines = f.readlines()
     n = 0
     for line in lines:
-        if line.startswith(sourcename) or line.startswith('bary')  or line.startswith('isol'):
+        if line.startswith(sourcename) or line.startswith('bary') or line.startswith('isol'):
+            # 解析数据（省略重复部分）
             parts = line.split()
             candfile = parts[0]
             cand_file = candfile.split(":")[0]
@@ -1347,7 +1350,6 @@ with open(input_file_path, "r") as f:  #未使用SNR，使用sigma
             num_hits = int(parts[10][1:-1])
             n += 1
             outname ='A'+str(n)+'_'+sourcename_mask
-            # print(f'读取第{i+1}个数据')
 
             cand_zmax = cand_file.split("ACCEL_")[-1].split("_JERK")[0]
             if "JERK_" in os.path.basename(cand_file):
@@ -1365,35 +1367,79 @@ with open(input_file_path, "r") as f:  #未使用SNR，使用sigma
             other_flags_prepfold = config.prepfold_flags
             if '-nsub' not in other_flags_prepfold:
                 other_flags_prepfold = f"{other_flags_prepfold} -nsub {nchan}"
-                
-            fold_raw_file = f"{png_dir}/script_fold_raw.txt"
+            
+            # 处理flag_fold_timeseries相关文件
             if config.flag_fold_timeseries == 1:
-                file_script_fold_name = "script_fold_ts.txt"
+                file_script_fold_name = "script_fold_ts.txt"  # 始终写入原文件路径
                 file_script_fold_abspath = f"{png_dir}/{file_script_fold_name}"
                 file_script_fold_abspath1 = f"{dir_folding}/{file_script_fold_name}"
-                
+
+                # 第一个循环时检查文件是否非空（需备份）
+                if n == 1:
+                    # 检查png_dir下的文件
+                    if os.path.exists(file_script_fold_abspath) and os.path.getsize(file_script_fold_abspath) > 0:
+                        # 原文件非空，备份为_copy
+                        backup_abspath = f"{png_dir}/script_fold_ts_copy.txt"
+                        # 若备份文件已存在，先删除（避免重命名失败）
+                        if os.path.exists(backup_abspath):
+                            os.remove(backup_abspath)
+                        os.rename(file_script_fold_abspath, backup_abspath)
+                    
+                    # 检查dir_folding下的文件
+                    if os.path.exists(file_script_fold_abspath1) and os.path.getsize(file_script_fold_abspath1) > 0:
+                        backup_abspath1 = f"{dir_folding}/script_fold_ts_copy.txt"
+                        if os.path.exists(backup_abspath1):
+                            os.remove(backup_abspath1)
+                        os.rename(file_script_fold_abspath1, backup_abspath1)
+
+                # 构造命令并写入（始终写入原文件路径）
                 file_to_fold = os.path.join(dir_dedispersion, cand_file.split("_ACCEL")[0] + ".dat")
-                cmd_prepfold1 = f"prepfold {other_flags_prepfold} -noxwin -dm {dm} -accelcand {candnum} -accelfile {dir_dedispersion}/{cand_file}.cand -o {outname}_ts_DM{dm}_{str_zmax_wmax}  {file_to_fold}" #没有添加mask
-                #A9_AQLX-1_raw_DM11.50_z0_ACCEL_Cand_4.pfd.png
+                cmd_prepfold1 = f"prepfold {other_flags_prepfold} -noxwin -dm {dm} -accelcand {candnum} -accelfile {dir_dedispersion}/{cand_file}.cand -o {outname}_ts_DM{dm}_{str_zmax_wmax}  {file_to_fold}"
+                
                 png1 = os.path.join(png_dir,f"{outname}_ts_DM{dm}_{str_zmax_wmax}_ACCEL_Cand_{candnum}.pfd.png")
                 log1 = os.path.join(LOG_dir06,f'fold_ts-{dm}-{p_ms:.6f}ms.ifok')
 
                 c1.append(cmd_prepfold1)
-                write2file(cmd_prepfold1,file_script_fold_abspath)
-                write2file(cmd_prepfold1,file_script_fold_abspath1)
+                write2file(cmd_prepfold1, file_script_fold_abspath)  # 写入原文件路径
+                write2file(cmd_prepfold1, file_script_fold_abspath1)
                 p1.append(png1)
                 l1.append(log1)
 
+                # 处理fold_raw_file（同样逻辑）
+                fold_raw_file = f"{png_dir}/script_fold_raw.txt"
+                if n == 1:
+                    if os.path.exists(fold_raw_file) and os.path.getsize(fold_raw_file) > 0:
+                        backup_fold_raw = f"{png_dir}/script_fold_raw_copy.txt"
+                        if os.path.exists(backup_fold_raw):
+                            os.remove(backup_fold_raw)
+                        os.rename(fold_raw_file, backup_fold_raw)
+                
                 cmd_prepfold2 = f"prepfold {other_flags_prepfold} -noxwin -dm {dm} -accelcand {candnum} -accelfile {dir_dedispersion}/{cand_file}.cand  {flag_ignorechan} -mask {mask_file_path} -o {outname}_raw_DM{dm}_{str_zmax_wmax}  {workdir+'/RAW/'+obsname }"
-                write2file(cmd_prepfold2,fold_raw_file)
+                write2file(cmd_prepfold2, fold_raw_file)  # 写入原文件路径
 
+            # 处理flag_fold_rawdata相关文件
             if config.flag_fold_rawdata == 1:
                 if ifbary == 1:
-                     print(f'请注意数据长度，默认折叠fit无质心修正')
-                file_script_fold_name = "script_fold_raw.txt"
+                    print(f'请注意数据长度，默认折叠fit无质心修正')
+                
+                file_script_fold_name = "script_fold_raw.txt"  # 始终写入原文件路径
                 file_script_fold_abspath = f"{png_dir}/{file_script_fold_name}"
                 file_script_fold_abspath1 = f"{dir_folding}/{file_script_fold_name}"
 
+                if n == 1:
+                    if os.path.exists(file_script_fold_abspath) and os.path.getsize(file_script_fold_abspath) > 0:
+                        backup_abspath = f"{png_dir}/script_fold_raw_copy.txt"
+                        if os.path.exists(backup_abspath):
+                            os.remove(backup_abspath)
+                        os.rename(file_script_fold_abspath, backup_abspath)
+                    
+                    if os.path.exists(file_script_fold_abspath1) and os.path.getsize(file_script_fold_abspath1) > 0:
+                        backup_abspath1 = f"{dir_folding}/script_fold_raw_copy.txt"
+                        if os.path.exists(backup_abspath1):
+                            os.remove(backup_abspath1)
+                        os.rename(file_script_fold_abspath1, backup_abspath1)
+
+                # 构造命令并写入（始终写入原文件路径）
                 file_to_fold = data_path
                 cmd_prepfold2 = f"prepfold {other_flags_prepfold} -noxwin -dm {dm} -accelcand {candnum} -accelfile {dir_dedispersion}/{cand_file}.cand  {flag_ignorechan} -mask {mask_file_path} -o {outname}_raw_DM{dm}_{str_zmax_wmax}    {file_to_fold}"
   
@@ -1401,12 +1447,11 @@ with open(input_file_path, "r") as f:  #未使用SNR，使用sigma
                 log2 = os.path.join(LOG_dir06,f'fold_raw-{dm}-{p_ms:.6f}ms.ifok')
                 
                 c2.append(cmd_prepfold2) 
-                file_script_fold_abspath = f"{png_dir}/{file_script_fold_name}"
-                write2file(cmd_prepfold2,file_script_fold_abspath)
-                write2file(cmd_prepfold2,file_script_fold_abspath1)
-                write2file(cmd_prepfold2,fold_raw_file)
+                write2file(cmd_prepfold2, file_script_fold_abspath)  # 写入原文件路径
+                write2file(cmd_prepfold2, file_script_fold_abspath1)
+                write2file(cmd_prepfold2, fold_raw_file)
                 p2.append(png2)
-                l2.append(log2)               
+                l2.append(log2)      
             
         cmd_prepfold_list = c1 + c2
         ifok_prepfold_list = p1+p2
@@ -1555,7 +1600,7 @@ if config.flag_step_folding == 1:
     ID = 0
     for idx, candidate in enumerate(candidates, start=1):
         ID += 1
-        if ID < fold_num_pl:
+        if ID < fold_num_pl*2:
             candidate_info = candidate['info']
             filename = f"A{idx}_DM{candidate_info['DM']}_{candidate_info['P_ms']}ms.png"
             file_b = os.path.join(dm_snr_dir, filename)
