@@ -108,7 +108,7 @@ def prep_configure(observation_filename):
         'MAX_SIMULTANEOUS_DMS_PER_PREPSUBBAND':  "1000             # prepsubband 一次处理的最大 DM 值数量（最大 1000）",
         'NUM_SIMULTANEOUS_SINGLEPULSE_SEARCHES': "%-4d             # 同时运行的单脉冲搜索实例数量" % (multiprocessing.cpu_count()),       
         
-        'RFIFIND_TIME':                          "0.1              # RFIFIND 的 -time 选项值",
+        'RFIFIND_TIME':                          "1              # RFIFIND 的 -time 选项值",
         'RFIFIND_FLAGS':                         "\"\"             # 为 RFIFIND 提供的其他选项",
         'RFIFIND_CHANS_TO_ZAP':                  "\"\"             # 在 RFIFIND 掩模中需要消除的通道列表，中值代替",
         'RFIFIND_TIME_INTERVALS_TO_ZAP':         "\"\"             # 在 RFIFIND 掩模中需要消除的时间间隔列表",
@@ -145,7 +145,7 @@ def prep_configure(observation_filename):
         'ACCELSEARCH_FLAGS':                     "-sigma 2            # 进行加速搜索时为 ACCELSEARCH 提供的其他选项",
         'ACCELSEARCH_GPU_FLAGS':                 "\"\"             # 使用 PRESTO_ON_GPU 进行加速搜索时为 ACCELSEARCH 提供的其他选项",
         'ACCELSEARCH_JERK_FLAGS':                "\"\"             # 进行jerk search时为 ACCELSEARCH 提供的其他选项",
-        'PREPFOLD_FLAGS':                        "\"-nosearch -ncpus %-3d -n 64 -npart 128 -nsub 64 \"     # 为 PREPFOLD 提供的其他选项" % (multiprocessing.cpu_count() / 4),
+        'PREPFOLD_FLAGS':                        "\"-topo -nosearch -ncpus %-3d -n 64 -npart 128 -nsub 64 \"     # 为 PREPFOLD 提供的其他选项" % (multiprocessing.cpu_count() / 4),
         'SINGLEPULSE_SEARCH_FLAGS':              "\"-t 7 -b -m 300 -p \"             # 进行单脉冲搜索时为 SINGLE_PULSE_SEARCH.py 提供的其他选项",
 
         'FAST_BUFFER_DIR':                       "\"\"             # 快速内存缓冲区路径（可选，最小化 I/O 瓶颈）",
