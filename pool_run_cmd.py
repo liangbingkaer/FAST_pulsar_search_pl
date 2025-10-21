@@ -37,6 +37,7 @@ def fold_task(cmd, ifok,logfile, work_dir,png_dir):
     whitelist = []
     filename = os.path.basename(ifok)
     png_name = f'{filename[:-4]}.png'
+    print(png_name)
     ps_path = os.path.join(work_dir,f'{filename[:-4]}.ps')
     """子任务执行函数"""
     run_cmd(cmd, ifok = ifok, work_dir=work_dir,log_file=logfile,mode='both')  #根据ifok判断是否运行cmd
@@ -100,7 +101,7 @@ cmdfile_name = "fold_raw.sh"
 if not os.path.isfile(cmdfile_name):
     print(f"当前文件夹中不存在文件：{cmdfile_name}")
     
-if (len(sys.argv) == 1 or ("-h" in sys.argv) or ("-help" in sys.argv) or ("--help" in sys.argv)):
+if (len(sys.argv) == 2 or ("-h" in sys.argv) or ("-help" in sys.argv) or ("--help" in sys.argv)):
     print("Usage: %s -cmdfile \"commands.sh\" -ncpus N " % (os.path.basename(sys.argv[0])))
     print('将使用默认值')
     sys.exit(0)  
@@ -142,42 +143,15 @@ for line in cmd_list:
         # ps_file = os.path.join(log_dir,ps_files[0])
         png_file = os.path.join(png_dir,ps_files[0][:-3] + '.png')
         ifok_files.append(png_file)
-        ps2png(os.path.join(os.getcwd(),'*ps'))
-        handle_files(work_dir, png_dir, 'copy','*png' )
+
     else:
-        ifok_files.append('/test/where.png')
+        ifok_files.append(f"where/{outname}*.png")
 
     logfile = os.path.join(log_dir,f'LOG_{outname}.txt')
     logfiles.append(logfile)
-
-ncpus = min(ncpus,len(cmd_list))
+    
 print(ifok_files)
+ncpus = min(ncpus,4*len(cmd_list))
 pool_fold(ncpus,'fold',cmd_list,ifok_files,logfiles,work_dir = os.getcwd(),png_dir=png_dir)
-
-
-ifok_files = []
-logfiles = []
-for line in cmd_list:
-    nsub = line.split("-nsub")[1].strip().split()[0] if "-nsub" in line else None
-    n = line.split("-n")[1].strip().split()[0] if "-n " in line else None  # 注意避免匹配 "-noxwin"
-    parfile = line.split("-par")[1].strip().split()[0] if "-par" in line else None
-    maskfile = line.split("-mask")[1].strip().split()[0] if "-mask" in line else None
-    outname = line.split("-o")[1].strip().split()[0] if "-o" in line else None
-    datafile = line.strip().split()[-1]
-    ps_files = glob.glob(f"{outname}*.ps") 
-
-    if ps_files:
-        # ps_file = os.path.join(log_dir,ps_files[0])
-        png_file = os.path.join(png_dir,ps_files[0][:-3] + '.png')
-        ps2png(os.path.join(os.getcwd(),'*ps'))
-        handle_files(work_dir, png_dir, 'copy','*png' )
-        ifok_files.append(png_file)
-#     else:
-#         ifok_files.append('/test/whysohard')
-
-#     logfile = os.path.join(log_dir,f'LOG_{outname}.txt')
-#     logfiles.append(logfile)
-
-# ncpus = min(ncpus,len(cmd_list))
-# print(ifok_files)
-# pool_fold(ncpus,'fold',cmd_list,ifok_files,logfiles,work_dir = os.getcwd(),png_dir=png_dir)
+# ps2png(os.path.join(os.getcwd(),'*ps'))
+# handle_files(work_dir, png_dir, 'copy','*png' )
