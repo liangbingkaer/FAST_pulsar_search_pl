@@ -148,19 +148,15 @@ else:
         with open(fold_file, "r") as f:
             for i, line in enumerate(f, start=1):  
                 if i in sorted_numbers:
-                    # 第一个循环写入前检查并备份
                     if is_first_write:
-                        # 检查目标文件是否存在且非空
                         if os.path.exists(fold_file_raw) and os.path.getsize(fold_file_raw) > 0:
                             # 备份为_copy后缀文件
                             backup_file = f"{fold_file_raw}_copy"
-                            # 若备份已存在则先删除
                             if os.path.exists(backup_file):
                                 os.remove(backup_file)
-                            shutil.copy2(fold_file_raw, backup_file)  # 保留元数据的复制
+                            shutil.copy2(fold_file_raw, backup_file)  
                             os.remove(fold_file_raw)
                             print(f"检测到原有文件非空，已备份至：{backup_file}")
-                        # 重置标志，后续不再检查
                         is_first_write = False
 
                     idx += 1
@@ -210,14 +206,12 @@ else:
             shutil.copy(fold_file, fold2dir2)
 
             fold_file_raw = os.path.join(fold2dir2, 'fold_raw.sh')
-            # 初始化第一个写入标志
             is_first_write = True  
 
             idx = 0
             with open(fold_file, "r") as f:
                 for i, line in enumerate(f, start=1):  
                     if i in sorted_numbers:
-                        # 第一个循环写入前检查并备份
                         if is_first_write:
                             if os.path.exists(fold_file_raw) and os.path.getsize(fold_file_raw) > 0:
                                 backup_file = f"{fold_file_raw}_copy"
@@ -225,7 +219,7 @@ else:
                                     os.remove(backup_file)
                                 shutil.copy2(fold_file_raw, backup_file)
                                 print(f"检测到原有文件非空，已备份至：{backup_file}")
-                            os.remove(fold_file_raw)
+                                os.remove(fold_file_raw)
                             is_first_write = False
 
                         savefilenodb(fold_file_raw, line.rstrip('\n'))
