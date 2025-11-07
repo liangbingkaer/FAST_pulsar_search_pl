@@ -1677,7 +1677,7 @@ if config.flag_step_folding == 1:
             else:
                 print(f"Error: 没有找到以 '{key_to_match}' 开头的文件。")
 
-            print(f'共保存{fold_num_pl}/ {len(candidates)} 张DM辅助图到目录: {dm_snr_dir}')
+            print(f'共保存{idx}/ {len(candidates)} 张DM辅助图到目录: {dm_snr_dir}')
 
 t_end = time.time()
 execution_time = t_end- t_start
