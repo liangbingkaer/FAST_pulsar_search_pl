@@ -1465,8 +1465,9 @@ def fold_task(cmd, ifok,logfile, work_dir,png_dir):
     ps_path = os.path.join(work_dir,f'{filename[:-4]}.ps')
     """子任务执行函数"""
     run_cmd(cmd, ifok = ifok, work_dir=work_dir,log_file=logfile,mode='both')  #根据ifok判断是否运行cmd
-    ps2png(ps_path)
-    handle_files(work_dir, png_dir, 'copy',png_name )
+    if not os.path.exists(ifok):
+        ps2png(ps_path)
+        handle_files(work_dir, png_dir, 'copy',png_name )
 
 def pool_fold(num_processes, task_name, cmd_list, ifok_list,log_list, work_dir=os.getcwd(),png_dir = None):
     """
@@ -1542,16 +1543,16 @@ if config.flag_step_folding == 1:
 
     candidates = []
     best_cands_filename = "%s/best_candidates_%s.siftedcands" % (dir_sifting, sourcename_mask)
-    with open(best_cands_filename, 'r') as f:
+    with open(best_cands_filename, 'r', encoding='utf-8-sig') as f:
         lines = f.readlines()
+        print(f"成功读取文件，共{len(lines)}行数据") 
 
         dm_list, sigma_list, snr_list = [], [], []
         candidate_info = None
-
-        for line in lines:
+        for line_idx, line in enumerate(lines, start=1):
             # 检测新的候选信号块
             if re.match(r'^\s*.*ACCEL_.*:', line):
-                if dm_list:
+                if dm_list:  # 保存上一个候选块
                     candidates.append({
                         'dm_list': dm_list,
                         'sigma_list': sigma_list,
@@ -1578,9 +1579,12 @@ if config.flag_step_folding == 1:
                     'numhits':str(parts[10])
                     }
 
-                #print(candidate_info)
+                print(f"\n✅ 解析到新候选块（行号{line_idx}）：{candidate_info['candfile']}:{candnum}")
 
-            match = re.match(r'\s*DM=\s*(\d+\.\d+)\s+SNR=(\d+\.\d+)\s+Sigma=(\d+\.\d+)', line)
+            match = re.match(
+            r'[\s　]*DM=[\s　]*(\d+\.?\d*?)[\s　]+SNR=[\s　]*(\d+\.?\d*?)[\s　]+Sigma=[\s　]*(\d+\.?\d*?)',
+            line
+        )
             if match:
                 dm = float(match.group(1))
                 snr = float(match.group(2))
@@ -1588,6 +1592,9 @@ if config.flag_step_folding == 1:
                 dm_list.append(dm)
                 snr_list.append(snr)
                 sigma_list.append(sigma)
+            else:
+                if 'DM=' in line:
+                    print(f"❌ 行号{line_idx}未匹配（格式问题）：{repr(line)}")
 
         if dm_list:
             candidates.append({
@@ -1598,6 +1605,8 @@ if config.flag_step_folding == 1:
             })
 
     ID = 0
+    print_log(f'一共存在{len(candidates)}张候选图')
+    #print_log(candidates)
     for idx, candidate in enumerate(candidates, start=1):
         ID += 1
         if ID < fold_num_pl*2:
@@ -1756,5 +1765,4 @@ if config.flag_singlepulse_search == 1 and config.flag_step_singlepulse_search =
 
 
 print_program_message('end')
-
 
