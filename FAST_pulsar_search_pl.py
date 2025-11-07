@@ -1579,12 +1579,12 @@ if config.flag_step_folding == 1:
                     'numhits':str(parts[10])
                     }
 
-                print(f"\n✅ 解析到新候选块（行号{line_idx}）：{candidate_info['candfile']}:{candnum}")
+                #print(f"\n✅ 解析到新候选块（行号{line_idx}）：{candidate_info['candfile']}:{candnum}")
 
             match = re.match(
-            r'[\s　]*DM=[\s　]*(\d+\.?\d*?)[\s　]+SNR=[\s　]*(\d+\.?\d*?)[\s　]+Sigma=[\s　]*(\d+\.?\d*?)',
-            line
-        )
+                r'[\s　]*DM=[\s　]*(\d+\.?\d*)[\s　]+SNR=[\s　]*(\d+\.?\d*)[\s　]+Sigma=[\s　]*(\d+\.?\d*)',
+                line
+            )
             if match:
                 dm = float(match.group(1))
                 snr = float(match.group(2))
@@ -1606,7 +1606,7 @@ if config.flag_step_folding == 1:
 
     ID = 0
     print_log(f'一共存在{len(candidates)}张候选图')
-    #print_log(candidates)
+    print_log(candidates)
     for idx, candidate in enumerate(candidates, start=1):
         ID += 1
         if ID < fold_num_pl*2:
