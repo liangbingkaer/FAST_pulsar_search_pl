@@ -145,7 +145,7 @@ def prep_configure(observation_filename):
         'ACCELSEARCH_FLAGS':                     "-sigma 2            # 进行加速搜索时为 ACCELSEARCH 提供的其他选项",
         'ACCELSEARCH_GPU_FLAGS':                 "\"\"             # 使用 PRESTO_ON_GPU 进行加速搜索时为 ACCELSEARCH 提供的其他选项",
         'ACCELSEARCH_JERK_FLAGS':                "\"\"             # 进行jerk search时为 ACCELSEARCH 提供的其他选项",
-        'PREPFOLD_FLAGS':                        "\"-topo -nosearch -ncpus %-3d -n 64 -npart 128 -nsub 64 \"     # 为 PREPFOLD 提供的其他选项" % (multiprocessing.cpu_count() / 4),
+        'PREPFOLD_FLAGS':                        "\"-topo -nosearch -ncpus %-3d -n 64 -npart 128 -nsub 64 -noxwin\"     # 为 PREPFOLD 提供的其他选项" % (multiprocessing.cpu_count() / 4),
         'SINGLEPULSE_SEARCH_FLAGS':              "\"-t 7 -b -m 300 -p \"             # 进行单脉冲搜索时为 SINGLE_PULSE_SEARCH.py 提供的其他选项",
 
         'FAST_BUFFER_DIR':                       "\"\"             # 快速内存缓冲区路径（可选，最小化 I/O 瓶颈）",
