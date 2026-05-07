@@ -1269,193 +1269,194 @@ if config.flag_step_sifting == 1 :
     else:
         print_log(f'请注意!将跳过sifting candidates，如果想重新生成候选，请移除ok-sifting',color=colors.WARNING)
 
+if config.flag_step_folding == 1:
 
-#按信噪比进行排序
-dir_sifting = os.path.join(config.root_workdir, "04_SIFTING")
-if ifdeorb == 1:
-    dir_sifting = os.path.join(config.root_workdir, "04_SIFTING",step)
-input_file_path = os.path.join(dir_sifting,'cand_sifting.txt')  
-SNR_file = os.path.join(dir_sifting,'cand_sift_SNR.txt') 
+    #按信噪比进行排序
+    dir_sifting = os.path.join(config.root_workdir, "04_SIFTING")
+    if ifdeorb == 1:
+        dir_sifting = os.path.join(config.root_workdir, "04_SIFTING",step)
+    input_file_path = os.path.join(dir_sifting,'cand_sifting.txt')  
+    SNR_file = os.path.join(dir_sifting,'cand_sift_SNR.txt') 
 
-with open(input_file_path, 'r') as infile:
-    # 读取所有行
-    lines = infile.readlines()
-    cand_n = len(lines)
-    print_log(f'#待折叠候选体个数为:{cand_n}',masks=str(cand_n),color=colors.OKBLUE)
-    # 解析数据，并跳过注释行
-    header = lines[1].split()  # 获取列名
-    header_str = "{:<2}{:<38} {:<10} {:<10} {:<10} {:<5} {:<10} {:<10} {:<10} {:<15} {:<10} {:<10}".format(*lines[1].split())   # 获取列名
-    #print(header_str)
-    data = [line.split() for line in lines[2:] if not line.startswith('#')]
+    with open(input_file_path, 'r') as infile:
+        # 读取所有行
+        lines = infile.readlines()
+        cand_n = len(lines)
+        print_log(f'#待折叠候选体个数为:{cand_n}',masks=str(cand_n),color=colors.OKBLUE)
+        # 解析数据，并跳过注释行
+        header = lines[1].split()  # 获取列名
+        header_str = "{:<2}{:<38} {:<10} {:<10} {:<10} {:<5} {:<10} {:<10} {:<10} {:<15} {:<10} {:<10}".format(*lines[1].split())   # 获取列名
+        #print(header_str)
+        data = [line.split() for line in lines[2:] if not line.startswith('#')]
 
-    # 将SNR作为浮点数添加到数据中(由于#存在，使用DM代码SNR)
-    for entry in data:
-        entry[header.index('DM')] = float(entry[header.index('DM')])
+        # 将SNR作为浮点数添加到数据中(由于#存在，使用DM代码SNR)
+        for entry in data:
+            entry[header.index('DM')] = float(entry[header.index('DM')])
 
-    # 按SNR列排序数据
-    sorted_data = sorted(data, key=lambda x: x[header.index('DM')], reverse=True)
+        # 按SNR列排序数据
+        sorted_data = sorted(data, key=lambda x: x[header.index('DM')], reverse=True)
 
-# 将排序后的数据写入新文件
-with open(SNR_file, 'w') as outfile:
-    # 写入列名
-    outfile.write((header_str) + '\n')
-    # 写入数据
-    for entry in sorted_data:
-        # 将浮点数转换为字符串
-        formatted_line = "{:<40} {:<10} {:<10} {:<10} {:<5} {:<10} {:<10} {:<10} {:<15} {:<10} {:<10}".format(*entry)
-        #entry_as_str = [str(item) for item in entry]
-        #outfile.write('\t'.join(entry_as_str) + '\n')
-        outfile.write(formatted_line + '\n')
-print_log("排序后的数据已保存到", SNR_file)
+    # 将排序后的数据写入新文件
+    with open(SNR_file, 'w') as outfile:
+        # 写入列名
+        outfile.write((header_str) + '\n')
+        # 写入数据
+        for entry in sorted_data:
+            # 将浮点数转换为字符串
+            formatted_line = "{:<40} {:<10} {:<10} {:<10} {:<5} {:<10} {:<10} {:<10} {:<15} {:<10} {:<10}".format(*entry)
+            #entry_as_str = [str(item) for item in entry]
+            #outfile.write('\t'.join(entry_as_str) + '\n')
+            outfile.write(formatted_line + '\n')
+    print_log("排序后的数据已保存到", SNR_file)
 
-print_log('''\n ==================== Setp6:folding candidates=  ====================== \n''',color=colors.HEADER) 
+    print_log('''\n ==================== Setp6:folding candidates=  ====================== \n''',color=colors.HEADER) 
 
-# print("\033[1m >> 提示:\033[0m 使用 '\033[1mtail -f %s/LOG_%s.txt\033[0m' 查看折叠进度" % (LOG_dir, LOG_basename))
-dir_folding = os.path.join(config.root_workdir, "05_FOLDING",basename_only+step)
-makedir(dir_folding)
-LOG_dir06 = os.path.join(LOG_dir,'06_fold',basename_only+step)
-makedir(LOG_dir06)
+    # print("\033[1m >> 提示:\033[0m 使用 '\033[1mtail -f %s/LOG_%s.txt\033[0m' 查看折叠进度" % (LOG_dir, LOG_basename))
+    dir_folding = os.path.join(config.root_workdir, "05_FOLDING",basename_only+step)
+    makedir(dir_folding)
+    LOG_dir06 = os.path.join(LOG_dir,'06_fold',basename_only+step)
+    makedir(LOG_dir06)
 
-# cmd_prepfold_list = []
-c1 =[]
-p1 = []
-l1 = []
-c2 =[]
-p2 = []
-l2 = []
-# ifok_prepfold_list = []
-# log_prepfold_list = []
-import os  # 需确保导入os模块用于文件操作
+    # cmd_prepfold_list = []
+    c1 =[]
+    p1 = []
+    l1 = []
+    c2 =[]
+    p2 = []
+    l2 = []
+    # ifok_prepfold_list = []
+    # log_prepfold_list = []
+    import os  # 需确保导入os模块用于文件操作
 
-with open(input_file_path, "r") as f:
-    lines = f.readlines()
-    n = 0
-    for line in lines:
-        if line.startswith(sourcename) or line.startswith('bary') or line.startswith('isol'):
-            # 解析数据（省略重复部分）
-            parts = line.split()
-            candfile = parts[0]
-            cand_file = candfile.split(":")[0]
-            candnum = int(candfile.split(":")[-1])
-            dm = float(parts[1])
-            dm ="{:.2f}".format(dm)
-            snr = float(parts[2])
-            sigma = float(parts[3])
-            num_harm = int(parts[4])
-            ipow = float(parts[5])
-            cpow = float(parts[6])
-            p_ms = float(parts[7])
-            r = float(parts[8])
-            z = float(parts[9])
-            num_hits = int(parts[10][1:-1])
-            n += 1
-            outname ='A'+str(n)+'_'+sourcename_mask
+    with open(input_file_path, "r") as f:
+        lines = f.readlines()
+        n = 0
+        for line in lines:
+            if line.startswith(sourcename) or line.startswith('bary') or line.startswith('isol'):
+                # 解析数据（省略重复部分）
+                parts = line.split()
+                candfile = parts[0]
+                cand_file = candfile.split(":")[0]
+                candnum = int(candfile.split(":")[-1])
+                dm = float(parts[1])
+                dm ="{:.2f}".format(dm)
+                snr = float(parts[2])
+                sigma = float(parts[3])
+                num_harm = int(parts[4])
+                ipow = float(parts[5])
+                cpow = float(parts[6])
+                p_ms = float(parts[7])
+                r = float(parts[8])
+                z = float(parts[9])
+                num_hits = int(parts[10][1:-1])
+                n += 1
+                outname ='A'+str(n)+'_'+sourcename_mask
 
-            cand_zmax = cand_file.split("ACCEL_")[-1].split("_JERK")[0]
-            if "JERK_" in os.path.basename(cand_file):
-                cand_wmax = cand_file.split("JERK_")[-1]
-                str_zmax_wmax = f"z{cand_zmax}_w{cand_wmax}"
-            else:
-                str_zmax_wmax = f"z{cand_zmax}"
-            str_zmax_wmax=str_zmax_wmax+'_'+f'{p_ms:.6f}'+'ms'
+                cand_zmax = cand_file.split("ACCEL_")[-1].split("_JERK")[0]
+                if "JERK_" in os.path.basename(cand_file):
+                    cand_wmax = cand_file.split("JERK_")[-1]
+                    str_zmax_wmax = f"z{cand_zmax}_w{cand_wmax}"
+                else:
+                    str_zmax_wmax = f"z{cand_zmax}"
+                str_zmax_wmax=str_zmax_wmax+'_'+f'{p_ms:.6f}'+'ms'
 
-            if ignorechan_list != "":
-                flag_ignorechan = f"-ignorechan {ignorechan_list} "
-            else:
-                flag_ignorechan = ""
+                if ignorechan_list != "":
+                    flag_ignorechan = f"-ignorechan {ignorechan_list} "
+                else:
+                    flag_ignorechan = ""
 
-            other_flags_prepfold = config.prepfold_flags
-            if '-nsub' not in other_flags_prepfold:
-                other_flags_prepfold = f"{other_flags_prepfold} -nsub {nchan}"
-            
-            # 处理flag_fold_timeseries相关文件
-            if config.flag_fold_timeseries == 1:
-                file_script_fold_name = "script_fold_ts.txt"  # 始终写入原文件路径
-                file_script_fold_abspath = f"{png_dir}/{file_script_fold_name}"
-                file_script_fold_abspath1 = f"{dir_folding}/{file_script_fold_name}"
+                other_flags_prepfold = config.prepfold_flags
+                if '-nsub' not in other_flags_prepfold:
+                    other_flags_prepfold = f"{other_flags_prepfold} -nsub {nchan}"
+                
+                # 处理flag_fold_timeseries相关文件
+                if config.flag_fold_timeseries == 1:
+                    file_script_fold_name = "script_fold_ts.txt"  # 始终写入原文件路径
+                    file_script_fold_abspath = f"{png_dir}/{file_script_fold_name}"
+                    file_script_fold_abspath1 = f"{dir_folding}/{file_script_fold_name}"
 
-                # 第一个循环时检查文件是否非空（需备份）
-                if n == 1:
-                    # 检查png_dir下的文件
-                    if os.path.exists(file_script_fold_abspath) and os.path.getsize(file_script_fold_abspath) > 0:
-                        # 原文件非空，备份为_copy
-                        backup_abspath = f"{png_dir}/script_fold_ts_copy.txt"
-                        # 若备份文件已存在，先删除（避免重命名失败）
-                        if os.path.exists(backup_abspath):
-                            os.remove(backup_abspath)
-                        os.rename(file_script_fold_abspath, backup_abspath)
+                    # 第一个循环时检查文件是否非空（需备份）
+                    if n == 1:
+                        # 检查png_dir下的文件
+                        if os.path.exists(file_script_fold_abspath) and os.path.getsize(file_script_fold_abspath) > 0:
+                            # 原文件非空，备份为_copy
+                            backup_abspath = f"{png_dir}/script_fold_ts_copy.txt"
+                            # 若备份文件已存在，先删除（避免重命名失败）
+                            if os.path.exists(backup_abspath):
+                                os.remove(backup_abspath)
+                            os.rename(file_script_fold_abspath, backup_abspath)
+                        
+                        # 检查dir_folding下的文件
+                        if os.path.exists(file_script_fold_abspath1) and os.path.getsize(file_script_fold_abspath1) > 0:
+                            backup_abspath1 = f"{dir_folding}/script_fold_ts_copy.txt"
+                            if os.path.exists(backup_abspath1):
+                                os.remove(backup_abspath1)
+                            os.rename(file_script_fold_abspath1, backup_abspath1)
+
+                    # 构造命令并写入（始终写入原文件路径）
+                    file_to_fold = os.path.join(dir_dedispersion, cand_file.split("_ACCEL")[0] + ".dat")
+                    cmd_prepfold1 = f"prepfold {other_flags_prepfold} -noxwin -dm {dm} -accelcand {candnum} -accelfile {dir_dedispersion}/{cand_file}.cand -o {outname}_ts_DM{dm}_{str_zmax_wmax}  {file_to_fold}"
                     
-                    # 检查dir_folding下的文件
-                    if os.path.exists(file_script_fold_abspath1) and os.path.getsize(file_script_fold_abspath1) > 0:
-                        backup_abspath1 = f"{dir_folding}/script_fold_ts_copy.txt"
-                        if os.path.exists(backup_abspath1):
-                            os.remove(backup_abspath1)
-                        os.rename(file_script_fold_abspath1, backup_abspath1)
+                    png1 = os.path.join(png_dir,f"{outname}_ts_DM{dm}_{str_zmax_wmax}_ACCEL_Cand_{candnum}.pfd.png")
+                    log1 = os.path.join(LOG_dir06,f'fold_ts-{dm}-{p_ms:.6f}ms.ifok')
 
-                # 构造命令并写入（始终写入原文件路径）
-                file_to_fold = os.path.join(dir_dedispersion, cand_file.split("_ACCEL")[0] + ".dat")
-                cmd_prepfold1 = f"prepfold {other_flags_prepfold} -noxwin -dm {dm} -accelcand {candnum} -accelfile {dir_dedispersion}/{cand_file}.cand -o {outname}_ts_DM{dm}_{str_zmax_wmax}  {file_to_fold}"
-                
-                png1 = os.path.join(png_dir,f"{outname}_ts_DM{dm}_{str_zmax_wmax}_ACCEL_Cand_{candnum}.pfd.png")
-                log1 = os.path.join(LOG_dir06,f'fold_ts-{dm}-{p_ms:.6f}ms.ifok')
+                    c1.append(cmd_prepfold1)
+                    write2file(cmd_prepfold1, file_script_fold_abspath)  # 写入原文件路径
+                    write2file(cmd_prepfold1, file_script_fold_abspath1)
+                    p1.append(png1)
+                    l1.append(log1)
 
-                c1.append(cmd_prepfold1)
-                write2file(cmd_prepfold1, file_script_fold_abspath)  # 写入原文件路径
-                write2file(cmd_prepfold1, file_script_fold_abspath1)
-                p1.append(png1)
-                l1.append(log1)
-
-                # 处理fold_raw_file（同样逻辑）
-                fold_raw_file = f"{png_dir}/script_fold_raw.txt"
-                if n == 1:
-                    if os.path.exists(fold_raw_file) and os.path.getsize(fold_raw_file) > 0:
-                        backup_fold_raw = f"{png_dir}/script_fold_raw_copy.txt"
-                        if os.path.exists(backup_fold_raw):
-                            os.remove(backup_fold_raw)
-                        os.rename(fold_raw_file, backup_fold_raw)
-                
-                cmd_prepfold2 = f"prepfold {other_flags_prepfold} -noxwin -dm {dm} -accelcand {candnum} -accelfile {dir_dedispersion}/{cand_file}.cand  {flag_ignorechan} -mask {mask_file_path} -o {outname}_raw_DM{dm}_{str_zmax_wmax}  {workdir+'/RAW/'+obsname }"
-                write2file(cmd_prepfold2, fold_raw_file)  # 写入原文件路径
-
-            # 处理flag_fold_rawdata相关文件
-            if config.flag_fold_rawdata == 1:
-                if ifbary == 1:
-                    print(f'请注意数据长度，默认折叠fit无质心修正')
-                
-                file_script_fold_name = "script_fold_raw.txt"  # 始终写入原文件路径
-                file_script_fold_abspath = f"{png_dir}/{file_script_fold_name}"
-                file_script_fold_abspath1 = f"{dir_folding}/{file_script_fold_name}"
-
-                if n == 1:
-                    if os.path.exists(file_script_fold_abspath) and os.path.getsize(file_script_fold_abspath) > 0:
-                        backup_abspath = f"{png_dir}/script_fold_raw_copy.txt"
-                        if os.path.exists(backup_abspath):
-                            os.remove(backup_abspath)
-                        os.rename(file_script_fold_abspath, backup_abspath)
+                    # 处理fold_raw_file（同样逻辑）
+                    fold_raw_file = f"{png_dir}/script_fold_raw.txt"
+                    if n == 1:
+                        if os.path.exists(fold_raw_file) and os.path.getsize(fold_raw_file) > 0:
+                            backup_fold_raw = f"{png_dir}/script_fold_raw_copy.txt"
+                            if os.path.exists(backup_fold_raw):
+                                os.remove(backup_fold_raw)
+                            os.rename(fold_raw_file, backup_fold_raw)
                     
-                    if os.path.exists(file_script_fold_abspath1) and os.path.getsize(file_script_fold_abspath1) > 0:
-                        backup_abspath1 = f"{dir_folding}/script_fold_raw_copy.txt"
-                        if os.path.exists(backup_abspath1):
-                            os.remove(backup_abspath1)
-                        os.rename(file_script_fold_abspath1, backup_abspath1)
+                    cmd_prepfold2 = f"prepfold {other_flags_prepfold} -noxwin -dm {dm} -accelcand {candnum} -accelfile {dir_dedispersion}/{cand_file}.cand  {flag_ignorechan} -mask {mask_file_path} -o {outname}_raw_DM{dm}_{str_zmax_wmax}  {workdir+'/RAW/'+obsname }"
+                    write2file(cmd_prepfold2, fold_raw_file)  # 写入原文件路径
 
-                # 构造命令并写入（始终写入原文件路径）
-                file_to_fold = data_path
-                cmd_prepfold2 = f"prepfold {other_flags_prepfold} -noxwin -dm {dm} -accelcand {candnum} -accelfile {dir_dedispersion}/{cand_file}.cand  {flag_ignorechan} -mask {mask_file_path} -o {outname}_raw_DM{dm}_{str_zmax_wmax}    {file_to_fold}"
-  
-                png2 = os.path.join(png_dir,f"{outname}_raw_DM{dm}_{str_zmax_wmax}_ACCEL_Cand_{candnum}.pfd.png")
-                log2 = os.path.join(LOG_dir06,f'fold_raw-{dm}-{p_ms:.6f}ms.ifok')
+                # 处理flag_fold_rawdata相关文件
+                if config.flag_fold_rawdata == 1:
+                    if ifbary == 1:
+                        print(f'请注意数据长度，默认折叠fit无质心修正')
+                    
+                    file_script_fold_name = "script_fold_raw.txt"  # 始终写入原文件路径
+                    file_script_fold_abspath = f"{png_dir}/{file_script_fold_name}"
+                    file_script_fold_abspath1 = f"{dir_folding}/{file_script_fold_name}"
+
+                    if n == 1:
+                        if os.path.exists(file_script_fold_abspath) and os.path.getsize(file_script_fold_abspath) > 0:
+                            backup_abspath = f"{png_dir}/script_fold_raw_copy.txt"
+                            if os.path.exists(backup_abspath):
+                                os.remove(backup_abspath)
+                            os.rename(file_script_fold_abspath, backup_abspath)
+                        
+                        if os.path.exists(file_script_fold_abspath1) and os.path.getsize(file_script_fold_abspath1) > 0:
+                            backup_abspath1 = f"{dir_folding}/script_fold_raw_copy.txt"
+                            if os.path.exists(backup_abspath1):
+                                os.remove(backup_abspath1)
+                            os.rename(file_script_fold_abspath1, backup_abspath1)
+
+                    # 构造命令并写入（始终写入原文件路径）
+                    file_to_fold = data_path
+                    cmd_prepfold2 = f"prepfold {other_flags_prepfold} -noxwin -dm {dm} -accelcand {candnum} -accelfile {dir_dedispersion}/{cand_file}.cand  {flag_ignorechan} -mask {mask_file_path} -o {outname}_raw_DM{dm}_{str_zmax_wmax}    {file_to_fold}"
+    
+                    png2 = os.path.join(png_dir,f"{outname}_raw_DM{dm}_{str_zmax_wmax}_ACCEL_Cand_{candnum}.pfd.png")
+                    log2 = os.path.join(LOG_dir06,f'fold_raw-{dm}-{p_ms:.6f}ms.ifok')
+                    
+                    c2.append(cmd_prepfold2) 
+                    write2file(cmd_prepfold2, file_script_fold_abspath)  # 写入原文件路径
+                    write2file(cmd_prepfold2, file_script_fold_abspath1)
+                    write2file(cmd_prepfold2, fold_raw_file)
+                    p2.append(png2)
+                    l2.append(log2)      
                 
-                c2.append(cmd_prepfold2) 
-                write2file(cmd_prepfold2, file_script_fold_abspath)  # 写入原文件路径
-                write2file(cmd_prepfold2, file_script_fold_abspath1)
-                write2file(cmd_prepfold2, fold_raw_file)
-                p2.append(png2)
-                l2.append(log2)      
-            
-        cmd_prepfold_list = c1 + c2
-        ifok_prepfold_list = p1+p2
-        log_prepfold_list = l1+l2
+            cmd_prepfold_list = c1 + c2
+            ifok_prepfold_list = p1+p2
+            log_prepfold_list = l1+l2
 
 
 def fold_task(cmd, ifok,logfile, work_dir,png_dir):
@@ -1684,26 +1685,26 @@ execution_time = t_end- t_start
 execution_time_str = format_execution_time(execution_time)
 print_log( "程序完整运行运行时间为： " + execution_time_str + "\n")
 
+if config.flag_step_folding == 1:
+    print_log('尝试打包文件',color=colors.HEADER)
 
-print_log('尝试打包文件',color=colors.HEADER)
+    # 获取 A1 到 A30 开头的 png 文件（使用 glob 和列表推导）
+    all_png_file = []
+    for i in range(1, 31):
+        pattern = os.path.join(png_dir, f"A{i}*.png")
+        matched_files = glob.glob(pattern)
+        all_png_file.extend(matched_files)
 
-# 获取 A1 到 A30 开头的 png 文件（使用 glob 和列表推导）
-all_png_file = []
-for i in range(1, 31):
-    pattern = os.path.join(png_dir, f"A{i}*.png")
-    matched_files = glob.glob(pattern)
-    all_png_file.extend(matched_files)
+    file_paths = all_png_file[:30]
+    file_paths.append(SNR_file)
 
-file_paths = all_png_file[:30]
-file_paths.append(SNR_file)
+    # 构造邮件正文
+    email_content = '该程序运行成功\n'
+    email_content += f'源名：{sourcename_mask}\n'
+    email_content += f'png文件路径：{png_dir}\n'
 
-# 构造邮件正文
-email_content = '该程序运行成功\n'
-email_content += f'源名：{sourcename_mask}\n'
-email_content += f'png文件路径：{png_dir}\n'
-
-# 发送邮件
-# send_email(email_content, file_paths)
+    # 发送邮件
+    # send_email(email_content, file_paths)
 
 def single2cmd(infile_list,sourcename, out_dir,ifok_dir, log_dir, other_flags="", presto_env=os.environ['PRESTO']):
     cmd_single_list=[]
@@ -1751,7 +1752,7 @@ if config.flag_singlepulse_search == 1 and config.flag_step_singlepulse_search =
     pool(n_pool,'single',single_cmd_list,ifok_list,log_list,work_dir = dir_singlepulse_search)
 
     os.chdir(dir_singlepulse_search)
-    command = f'single_pulse_search.py -b -m 200 *_DM*.singlepulse'
+    command = f'single_pulse_search.py -b -t 10 -m 30 *_DM*.singlepulse'
     print (command)
     os.system(command)
     write2file(command,f'{dir_singlepulse_search}/single_cmd.sh')
@@ -1762,6 +1763,7 @@ if config.flag_singlepulse_search == 1 and config.flag_step_singlepulse_search =
     makedir(png_single_dir)
     #png_files = glob.glob(os.path.join(dir_singlepulse_search, '*.png'))
     handle_files(dir_singlepulse_search, png_single_dir, 'copy', '*.png')
+    handle_files(dir_singlepulse_search, '/home/pengl/pulsar/work/J1720-0533/single_png', 'copy', '*.png')
 
 
 print_program_message('end')
