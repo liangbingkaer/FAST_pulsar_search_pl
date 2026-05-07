@@ -154,7 +154,7 @@ def prep_configure(observation_filename):
         'FLAG_REMOVE_DATFILES_OF_SEGMENTS':      "1                 # 分析中完全忽略的通道列表（PRESTO -ignorechan 选项）",
        # 搜索后是否删除较短分段的 .dat 文件以节省磁盘空间？（1=是，0=否）",
         'STEP_RFIFIND':                          "1                # 是否运行 RFIFIND 步骤？（1=是，0=否）",
-        'STEP_ZAPLIST':                          "1                # 是否运行 ZAPLIST 步骤？（1=是，0=否）",
+        'STEP_ZAPLIST':                          "1                # 是否运行 ZAPLIST 步骤？（1=是，0=否）,质心修正需修改为0",
         'STEP_DEDISPERSE':                       "1                # 是否运行去色散步骤？（1=是，0=否）",
         'STEP_REALFFT':                          "1                # 是否运行 REALFFT 步骤？（1=是）",
         'STEP_PERIODICITY_SEARCH':               "1                # 是否运行周期性搜索步骤？（1=是，0=否）",
