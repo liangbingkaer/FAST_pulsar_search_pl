@@ -673,10 +673,10 @@ def dedisperse2cmd(infile,open_mask,sourcename, out_dir, log_dir, ignorechan_lis
                 flag_numout = ""
                 if i < N_schemes-1:
                         # 构造 prepsubband 命令（非最后一个方案）
-                        cmd_prepsubband = "prepsubband %s %s -o %s %s %s -lodm %s -dmstep %s -numdms %s -downsamp %s -nsub %s %s" % (other_flags, flag_numout, prepsubband_outfilename, string_ignorechan, string_mask, list_DD_schemes[i]['loDM'], list_DD_schemes[i]['dDM'], list_DD_schemes[i]['num_DMs'], list_DD_schemes[i]['downsamp'], nsubbands, infile)
+                        cmd_prepsubband = "prepsubband -nobary %s %s -o %s %s %s -lodm %s -dmstep %s -numdms %s -downsamp %s -nsub %s %s" % (other_flags, flag_numout, prepsubband_outfilename, string_ignorechan, string_mask, list_DD_schemes[i]['loDM'], list_DD_schemes[i]['dDM'], list_DD_schemes[i]['num_DMs'], list_DD_schemes[i]['downsamp'], nsubbands, infile)
                 elif i == N_schemes-1:
                         # 构造 prepsubband 命令（最后一个方案，DM 数量加 1）
-                        cmd_prepsubband = "prepsubband %s %s -o %s %s %s -lodm %s -dmstep %s -numdms %s -downsamp %s -nsub %s %s" % (other_flags, flag_numout, prepsubband_outfilename, string_ignorechan, string_mask, list_DD_schemes[i]['loDM'], list_DD_schemes[i]['dDM'], list_DD_schemes[i]['num_DMs'] + 1, list_DD_schemes[i]['downsamp'], nsubbands, infile)
+                        cmd_prepsubband = "prepsubband -nobary %s %s -o %s %s %s -lodm %s -dmstep %s -numdms %s -downsamp %s -nsub %s %s" % (other_flags, flag_numout, prepsubband_outfilename, string_ignorechan, string_mask, list_DD_schemes[i]['loDM'], list_DD_schemes[i]['dDM'], list_DD_schemes[i]['num_DMs'] + 1, list_DD_schemes[i]['downsamp'], nsubbands, infile)
                 cmd_prepsubband_list.append(cmd_prepsubband)
                 ifok_list.append(ifok_path)
                 log_list.append(log_abspath)
@@ -1125,8 +1125,8 @@ def get_command_output(command, shell_state=False, work_dir=os.getcwd()):
         else:
                 proc = subprocess.Popen([command], stdout=subprocess.PIPE, shell=shell_state, cwd=work_dir)
         out, err = proc.communicate()  
-        append_to_script_if_not_exists(os.path.join(work_dir, 'ddplan.sh'),f'#程序运行路径为:{work_dir}')
-        append_to_script_if_not_exists(os.path.join(work_dir, 'ddplan.sh'),command)   
+        append_to_script_if_not_exists(os.path.join(work_dir, 'grep.sh'),f'#程序运行路径为:{work_dir}')
+        append_to_script_if_not_exists(os.path.join(work_dir, 'grep.sh'),command)   
         return out.decode('ascii')
 
 def get_DD_scheme_from_DDplan_output(output_DDplan, N_DMs_per_prepsubband, nsubbands):
