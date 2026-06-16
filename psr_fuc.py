@@ -42,12 +42,13 @@ def makedir(*dirs):
         os.makedirs(dir, exist_ok=True)
 
 def write2file(content, file_path, add_newline=True):
-    """将消息写入指定文件"""
-    with open(file_path, 'a') as f:
+    """将消息写入指定文件（UTF-8 编码，替换无法编码的字符）"""
+    with open(file_path, 'a', encoding='utf-8', errors='replace') as f:
         if add_newline:
             f.write(content + "\n")
         else:
             f.write(content)
+
 
 def print_log(*args, sep=' ', end='\n', file=None, flush=False, log_files=None, masks=None, color=None, mode='both'):
     """
@@ -59,6 +60,22 @@ def print_log(*args, sep=' ', end='\n', file=None, flush=False, log_files=None, 
         - 'p'：仅打印到控制台
         - 'both'：同时写入文件并打印到控制台（默认）
     """
+    import re
+    safe_args = []
+    for arg in args:
+        if isinstance(arg, bytes):
+            # 对 bytes 进行安全解码
+            s = arg.decode('utf-8', errors='replace')
+        else:
+            try:
+                s = str(arg)
+            except UnicodeEncodeError:
+                s = repr(arg)
+        # 移除 ANSI 转义序列
+        s = re.sub(r'\x1b\[[0-9;]*[mK]', '', s)
+        # 再次清理非法 UTF-8 序列
+        s = s.encode('utf-8', errors='replace').decode('utf-8', errors='replace')
+        safe_args.append(s)
     default_dir = os.path.join(cwd, 'logall.txt')
     if log_files is None:
         log_files = [default_dir]
@@ -67,7 +84,7 @@ def print_log(*args, sep=' ', end='\n', file=None, flush=False, log_files=None, 
     else:
         log_files = list(log_files) + [default_dir]
 
-    message = sep.join(str(arg) for arg in args) + end
+    message = sep.join(safe_args) + end
 
     if mode in ['w', 'both']:
         for file_path in log_files:
@@ -77,9 +94,13 @@ def print_log(*args, sep=' ', end='\n', file=None, flush=False, log_files=None, 
     if color:
         if masks:
             if isinstance(masks, (str, bytes)):
-                masks = [masks]  # 如果传入单个字符串，转为列表
+                masks = [masks]
             for mask in masks:
-                highlighted_message = highlighted_message.replace(str(mask), f"{color}{mask}{colors.ENDC}")
+                try:
+                    mask_str = str(mask).encode('utf-8', 'ignore').decode('utf-8')
+                    highlighted_message = highlighted_message.replace(mask_str, f"{color}{mask_str}{colors.ENDC}")
+                except:
+                    pass
         else:
             highlighted_message = f"{color}{message}{colors.ENDC}"
 
@@ -144,18 +165,35 @@ def print_header():
     print_log('--'.center(80, '-'))
     time.sleep(1)
 
+# def append_to_script_if_not_exists(file_path, content):
+#     """
+#     如果内容不存在，则追加内容。如果文件不存在，则创建文件。
+#     """
+#     # 检查文件是否存在，如果不存在则创建
+#     if not os.path.exists(file_path):
+#         open(file_path, 'w').close()  # 创建一个空文件
+
+#     with open(file_path, 'r+') as file:
+#         existing_content = file.read()
+#         if content not in existing_content:
+#             file.write(content+'\n')
+    
 def append_to_script_if_not_exists(file_path, content):
     """
     如果内容不存在，则追加内容。如果文件不存在，则创建文件。
+    使用二进制模式避免编码错误。
     """
-    # 检查文件是否存在，如果不存在则创建
-    if not os.path.exists(file_path):
-        open(file_path, 'w').close()  # 创建一个空文件
-
-    with open(file_path, 'r+') as file:
-        existing_content = file.read()
-        if content not in existing_content:
-            file.write(content+'\n')
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    if os.path.exists(file_path):
+        with open(file_path, 'rb') as f:
+            existing_data = f.read()
+        existing_content = existing_data.decode('utf-8', errors='replace')
+    else:
+        existing_content = ""
+    if content not in existing_content:
+        with open(file_path, 'ab') as f:  # 'ab' 二进制追加模式
+            f.write(content.encode('utf-8', errors='replace'))
+            f.write(b'\n')
 
 def run_cmd(cmd, ifok=None, work_dir=None, log_file=None, dict_envs={}, flag_append=True,mode='both'):
     """
@@ -175,7 +213,7 @@ def run_cmd(cmd, ifok=None, work_dir=None, log_file=None, dict_envs={}, flag_app
 
     start_time = time.time()
     datetime_start = datetime.now().strftime("%Y/%m/%d %H:%M")
-    global cwd  # 声明使用全局变量 cwd
+    global cwd
 
     if work_dir:
         os.chdir(work_dir)
@@ -183,11 +221,12 @@ def run_cmd(cmd, ifok=None, work_dir=None, log_file=None, dict_envs={}, flag_app
         work_dir = cwd
 
     log_mode = "a" if flag_append else "w"
-    log_handle = open(log_file, log_mode) if log_file else None
+    log_handle = open(log_file, log_mode, encoding='utf-8', errors='replace') if log_file else None
 
     print_log(f'程序运行路径为: {work_dir}',mode=mode)
-    print_log(f'日志文件为：{log_file}',mode=mode)
-    #print_log(f'运行命令：{cmd}\n', log_file,masks=cmd,color=colors.OKCYAN)
+    print_log(f'日志文件为：{log_file} /n ifok文件为：{ifok}',mode=mode)
+    print_log(f'运行命令：{cmd}\n', log_file,masks=cmd,color=colors.OKCYAN)
+
 
     if log_handle:
         log_handle.write(f"****************************************************************\n")
@@ -199,16 +238,27 @@ def run_cmd(cmd, ifok=None, work_dir=None, log_file=None, dict_envs={}, flag_app
 
     env = os.environ.copy()
     env.update(dict_envs)
+    env['LC_ALL'] = 'C'          # 强制英文输出
+    env['LANG'] = 'C'
     proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, cwd=work_dir)
     stdout, stderr = proc.communicate()
 
+    try:
+        stdout_str = stdout.decode('utf-8', errors='replace')
+    except Exception as dec_err:
+        stdout_str = f"[无法解码 stdout: {dec_err}]\n原始字节 repr: {stdout!r}"
+    try:
+        stderr_str = stderr.decode('utf-8', errors='replace')
+    except Exception as dec_err:
+        stderr_str = f"[无法解码 stderr: {dec_err}]\n原始字节 repr: {stderr!r}"
+
     if log_handle:
-        log_handle.write(stdout.decode())
-        log_handle.write(stderr.decode())
+        log_handle.write(stdout_str)
+        log_handle.write(stderr_str)
     else:
-        print(stdout.decode())
-        if stderr:
-            print_log(f"Error: {stderr.decode()}", log_file,color=colors.ERROR)
+        print(stdout_str)
+        if stderr_str:
+            print_log(f"Error: {stderr_str}", log_file, color=colors.ERROR)
 
     datetime_end = datetime.now().strftime("%Y/%m/%d %H:%M")
     execution_time = time.time() - start_time
@@ -216,13 +266,16 @@ def run_cmd(cmd, ifok=None, work_dir=None, log_file=None, dict_envs={}, flag_app
     if log_handle:
         log_handle.write(f"\n结束日期和时间：{datetime_end}\n")
         log_handle.write(f"总耗时：{execution_time:.2f} 秒\n")
+        
+        log_handle.write(stdout_str)
+        log_handle.write(stderr_str)
         log_handle.close()
 
     append_to_script_if_not_exists(os.path.join(work_dir, 'cmd.sh'),f'#程序运行路径为: {work_dir}\n{cmd}\n')
     time_consum(start_time,cmd=cmd,mode=mode)
 
     if ifok and ifok.endswith(('.txt', '.ifok')):
-        with open(ifok, 'a') as f:
+        with open(ifok, 'a', encoding='utf-8') as f:
             f.write(f"#Command executed:\n {cmd}\n")
     os.chdir(cwd)
 
@@ -237,9 +290,6 @@ def run_cmd(cmd, ifok=None, work_dir=None, log_file=None, dict_envs={}, flag_app
         append_to_script_if_not_exists(rm_script_path, f"rm -f {ifok}\n")
         append_to_script_if_not_exists(rm_script_path, f"echo 'Deleted {ifok}'\n")
         os.chmod(rm_script_path, 0o755)
-        #print_log(f"Created deletion script: {rm_script_path}\n", log_file)
-
-
 
 def check_presto_path(presto_path, key):
     # 检查 PRESTO 路径是否存在
@@ -377,7 +427,13 @@ def pool(num_processes, task_name, cmd_list, ifok_list, log_list=None, work_dir=
 
     def handle_error(error):
         """统一错误处理函数"""
-        progress_bar.write(f"任务执行错误: {error}")
+        try:
+                error_str = str(error)
+                # 清洗错误信息中的非法字符
+                error_str = error_str.encode('utf-8', errors='replace').decode('utf-8', errors='replace')
+                progress_bar.write(f"任务执行错误: {error_str}")
+        except:
+                progress_bar.write("任务执行错误: 未知错误")
 
     # 创建进程池并提交任务
     process_pool = Pool(num_processes)
