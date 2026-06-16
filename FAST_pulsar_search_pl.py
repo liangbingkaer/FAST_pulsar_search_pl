@@ -1375,13 +1375,9 @@ if config.flag_step_folding == 1:
                     file_script_fold_abspath = f"{png_dir}/{file_script_fold_name}"
                     file_script_fold_abspath1 = f"{dir_folding}/{file_script_fold_name}"
 
-                    # 第一个循环时检查文件是否非空（需备份）
-                    if n == 1:
-                        # 检查png_dir下的文件
+                    if n ==1:
                         if os.path.exists(file_script_fold_abspath) and os.path.getsize(file_script_fold_abspath) > 0:
-                            # 原文件非空，备份为_copy
                             backup_abspath = f"{png_dir}/script_fold_ts_copy.txt"
-                            # 若备份文件已存在，先删除（避免重命名失败）
                             if os.path.exists(backup_abspath):
                                 os.remove(backup_abspath)
                             os.rename(file_script_fold_abspath, backup_abspath)
@@ -1398,7 +1394,7 @@ if config.flag_step_folding == 1:
                     cmd_prepfold1 = f"prepfold {other_flags_prepfold} -noxwin -dm {dm} -accelcand {candnum} -accelfile {dir_dedispersion}/{cand_file}.cand -o {outname}_ts_DM{dm}_{str_zmax_wmax}  {file_to_fold}"
                     
                     png1 = os.path.join(png_dir,f"{outname}_ts_DM{dm}_{str_zmax_wmax}_ACCEL_Cand_{candnum}.pfd.png")
-                    log1 = os.path.join(LOG_dir06,f'fold_ts-{dm}-{p_ms:.6f}ms.ifok')
+                    log1 = os.path.join(LOG_dir06,f'{outname}-fold_ts-{dm}-{p_ms:.6f}ms.txt')
 
                     c1.append(cmd_prepfold1)
                     write2file(cmd_prepfold1, file_script_fold_abspath)  # 写入原文件路径
@@ -1408,7 +1404,7 @@ if config.flag_step_folding == 1:
 
                     # 处理fold_raw_file（同样逻辑）
                     fold_raw_file = f"{png_dir}/script_fold_raw.txt"
-                    if n == 1:
+                    if n ==1:
                         if os.path.exists(fold_raw_file) and os.path.getsize(fold_raw_file) > 0:
                             backup_fold_raw = f"{png_dir}/script_fold_raw_copy.txt"
                             if os.path.exists(backup_fold_raw):
@@ -1445,7 +1441,7 @@ if config.flag_step_folding == 1:
                     cmd_prepfold2 = f"prepfold {other_flags_prepfold} -noxwin -dm {dm} -accelcand {candnum} -accelfile {dir_dedispersion}/{cand_file}.cand  {flag_ignorechan} -mask {mask_file_path} -o {outname}_raw_DM{dm}_{str_zmax_wmax}    {file_to_fold}"
     
                     png2 = os.path.join(png_dir,f"{outname}_raw_DM{dm}_{str_zmax_wmax}_ACCEL_Cand_{candnum}.pfd.png")
-                    log2 = os.path.join(LOG_dir06,f'fold_raw-{dm}-{p_ms:.6f}ms.ifok')
+                    log2 = os.path.join(LOG_dir06,f'{outname}-fold_raw-{dm}-{p_ms:.6f}ms.txt')
                     
                     c2.append(cmd_prepfold2) 
                     write2file(cmd_prepfold2, file_script_fold_abspath)  # 写入原文件路径
@@ -1459,16 +1455,26 @@ if config.flag_step_folding == 1:
             log_prepfold_list = l1+l2
 
 
-def fold_task(cmd, ifok,logfile, work_dir,png_dir):
+def fold_task(cmd, ifok, logfile, work_dir, png_dir):
     whitelist = []
     filename = os.path.basename(ifok)
     png_name = f'{filename[:-4]}.png'
-    ps_path = os.path.join(work_dir,f'{filename[:-4]}.ps')
-    """子任务执行函数"""
-    run_cmd(cmd, ifok = ifok, work_dir=work_dir,log_file=logfile,mode='both')  #根据ifok判断是否运行cmd
-    if not os.path.exists(ifok):
-        ps2png(ps_path)
-        handle_files(work_dir, png_dir, 'copy',png_name )
+    ps_path = os.path.join(work_dir, f'{filename[:-4]}.ps')
+    try:
+        run_cmd(cmd, ifok=ifok, work_dir=work_dir, log_file=logfile, mode='both')
+        if not os.path.exists(ifok):
+            ps2png(ps_path)
+            handle_files(work_dir, png_dir, 'copy', png_name)
+    except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+        error_type = type(e).__name__
+        error_args = e.args
+        print_log(f"fold_task 内部错误: 类型={error_type}, 参数={error_args}", color=colors.ERROR)
+        print_log(tb, color=colors.ERROR)
+        # error_file = ifok + ".error"
+        # with open(error_file, 'w') as ef:
+        #     ef.write(f"类型: {error_type}\n参数: {error_args}\n{tb}")
 
 def pool_fold(num_processes, task_name, cmd_list, ifok_list,log_list, work_dir=os.getcwd(),png_dir = None):
     """
@@ -1499,8 +1505,12 @@ def pool_fold(num_processes, task_name, cmd_list, ifok_list,log_list, work_dir=o
         progress_bar.update()
     
     def handle_error(error):
-        """统一错误处理函数"""
-        progress_bar.write(f"任务执行错误: {error}")
+        try:
+            error_str = str(error)
+            error_str = error_str.encode('utf-8', errors='replace').decode('utf-8', errors='replace')
+            progress_bar.write(f"任务执行错误: {error_str}")
+        except Exception as e:
+            progress_bar.write(f"任务执行错误: 无法解码错误信息 - {repr(error)} (额外异常: {repr(e)})")
 
     # 创建进程池并提交任务
     process_pool = Pool(num_processes)
@@ -1529,7 +1539,9 @@ if config.flag_step_folding == 1:
     fold_num_pl = min(len(cmd_prepfold_list),fold_num)
     # False_list = [False] * fold_num_pldir_folding
     # cmd_prepfold_list1 = cmd_prepfold_list[:fold_num_pl]
+    print_log( "一共折叠 " + str(fold_num_pl) + "张图\n")
     start_time = time.time()
+    print_log(f"test :{ifok_prepfold_list} \n")
     pool_fold(n_pool,'fold',cmd_prepfold_list[:fold_num_pl],ifok_prepfold_list[:fold_num_pl],log_prepfold_list[:fold_num_pl],work_dir = dir_folding,png_dir=png_dir)
 
     end_time = time.time()
@@ -1539,7 +1551,7 @@ if config.flag_step_folding == 1:
     time.sleep(2)   
 
     print_log('''\n ==================== '生产DM-SNR辅助图' ====================== \n''',color=colors.HEADER) 
-    dm_snr_dir = os.path.join(dir_sifting,'dm_snr_plots')
+    dm_snr_dir = os.path.join(dir_folding,'dm_snr_plots')
     os.makedirs(dm_snr_dir, exist_ok=True)
 
     candidates = []
@@ -1607,7 +1619,7 @@ if config.flag_step_folding == 1:
 
     ID = 0
     print_log(f'一共存在{len(candidates)}张候选图')
-    print_log(candidates)
+    #print_log(candidates)   #写入ok-sifting
     for idx, candidate in enumerate(candidates, start=1):
         ID += 1
         if ID < fold_num_pl*2:
