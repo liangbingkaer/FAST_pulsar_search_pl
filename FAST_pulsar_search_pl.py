@@ -953,7 +953,7 @@ if ifbary == 1:
     print_log('成功！')
     print_log('''\n ==================== ra,dec修正完毕  ====================== \n''',color=colors.HEADER)
 
-    prepdata_cmd_list,ifok_list,log_list = prepdata2bary(dat_names,sourcename_mask, bary_dir,ifok_dir03b, LOG_dir03b, Nsamples=0, ignorechan_list="",mask='', downsample_factor=1, other_flags=config.prepdata_flags,presto_env=os.environ['PRESTO'])
+    prepdata_cmd_list,ifok_list,log_list = prepdata2bary(dat_names,sourcename_mask, bary_dir,ifok_dir03b, LOG_dir03b, Nsamples=0, ignorechan_list="",mask='', downsample_factor=1, other_flags=config.prepsubband_flags,presto_env=os.environ['PRESTO'])
     
     print_log('''\n ==================== 3 -3  prepdata质心修正  ====================== \n''',color=colors.OKGREEN) 
     print_log(f'并行质心修正:核数{n_pool}/{cpu_count()}',masks=str(n_pool),color=colors.HEADER)
